@@ -1,4 +1,5 @@
 import tkinter as tk
+
 from tkinter import ttk, font as tkfont, filedialog
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas as pdf_canvas
@@ -6,7 +7,7 @@ from reportlab.pdfgen import canvas as pdf_canvas
 class WordApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("A4 Word Processor")
+        self.root.title("Application")
         self.root.state('zoomed')  # Maximize window
         
         # Configure grid layout
@@ -24,6 +25,7 @@ class WordApp:
         self.pages = []
         self.bold_on = False
         self.current_font = ("Arial", 12)
+        self.root.taille = 12
         self.current_page = None  # Track the currently focused page
         
         # Configure styles
@@ -36,13 +38,14 @@ class WordApp:
         self.setup_canvas()
         self.add_new_page()
         
+        
     def setup_styles(self):
         style = ttk.Style()
         style.configure('Header.TFrame', background='#f0f0f0')
         style.configure('Primary.TButton', font=('Arial', 10, 'bold'), padding=6)
         style.map('Primary.TButton',
-                background=[('active', '#0052cc'), ('!active', '#0066ff')],
-                foreground=[('active', 'white'), ('!active', 'white')])
+                background=[('active', 'red'), ('!active', 'red')],
+                foreground=[('active', 'black'), ('!active', 'black')])
         
     def add_controls(self):
         """Add control buttons to header with improved styling"""
@@ -61,8 +64,15 @@ class WordApp:
         ttk.Button(control_frame, text="Export PDF", command=self.export_pdf,
                   style='Primary.TButton').pack(side=tk.LEFT, padx=5)
         
+        spin_var = tk.IntVar(value=12)
+        spin_rows = ttk.Spinbox(control_frame, from_=1, to=64, textvariable=spin_var).pack(side=tk.LEFT)
+        
+        spin_var.trace_add('write', lambda *args: self.EditSize(spin_var.get()))
         self.bold_on = False
 
+    def EditSize(self, taille):
+        self.root.taille = taille
+        
     def setup_canvas(self):
         """Configure scrollable canvas with centered pages"""
         self.canvas = tk.Canvas(self.content_frame, bg='#f5f5f5', highlightthickness=0)
@@ -110,10 +120,10 @@ class WordApp:
         # Add subtle shadow effect
         page_canvas.create_rectangle(2, 2, a4_width+2, a4_height+2, fill='#e0e0e0', outline='')
         page_canvas.create_rectangle(0, 0, a4_width, a4_height, fill="white")
-        
+
         # Add text widget with proper margins
         text_widget = tk.Text(page_canvas, wrap="word", bg="white", bd=0,
-                            font=('Arial', 12), padx=40, pady=50)
+                            font=('Arial', self.root.taille), padx=40, pady=50)
         text_widget.place(x=0, y=0, width=a4_width, height=a4_height)
         
         # Configure tags and bindings
