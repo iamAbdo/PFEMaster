@@ -72,6 +72,9 @@ class WordApp:
 
     def EditSize(self, taille):
         self.root.taille = taille
+        if self.current_page:
+            self.current_page.configure(font=('Arial', self.root.taille))
+            self.current_page.tag_configure("bold", font=('Arial', self.root.taille, 'bold'))
         
     def setup_canvas(self):
         """Configure scrollable canvas with centered pages"""
@@ -127,7 +130,7 @@ class WordApp:
         text_widget.place(x=0, y=0, width=a4_width, height=a4_height)
         
         # Configure tags and bindings
-        text_widget.tag_configure("bold", font=('Arial', 12, 'bold'))
+        text_widget.tag_configure("bold", font=('Arial', self.root.taille, 'bold'))
         text_widget.bind("<KeyPress>", self.handle_key_press)
         text_widget.bind("<FocusIn>", lambda e: self.set_current_page(text_widget))
         
