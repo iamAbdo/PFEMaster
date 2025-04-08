@@ -8,17 +8,14 @@ class WordApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Application")
-        self.root.state('zoomed')  # Maximize window
+        self.root.state('zoomed')  
         
-        # Configure grid layout
         self.root.grid_rowconfigure(1, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
         
-        # Create header frame with improved styling
         self.header_frame = ttk.Frame(self.root, height=80, style='Header.TFrame')
         self.header_frame.grid(row=0, column=0, sticky="nsew")
         
-        # Create main content frame
         self.content_frame = ttk.Frame(self.root)
         self.content_frame.grid(row=1, column=0, sticky="nsew")
         
@@ -26,20 +23,17 @@ class WordApp:
         self.bold_on = False
         self.current_font = ("Arial", 12)
         self.taille = 12
-        self.current_page = None  # Track the currently focused page
+        self.current_page = None 
         
-        # Configure styles
         self.setup_styles()
-        
-        # Add control buttons
         self.add_controls()
         
-        # Setup canvas and pages
         self.setup_canvas()
         self.add_new_page()
         
         
     def setup_styles(self):
+        """configure styling (like class's in css)"""
         style = ttk.Style()
         style.configure('Header.TFrame', background='#f0f0f0')
         style.configure('Primary.TButton', font=('Arial', 10, 'bold'), padding=6)
@@ -48,7 +42,7 @@ class WordApp:
                 foreground=[('active', 'black'), ('!active', 'black')])
         
     def add_controls(self):
-        """Add control buttons to header with improved styling"""
+        """Add control buttons to header with styling"""
         control_frame = ttk.Frame(self.header_frame)
         control_frame.pack(pady=10, padx=20, side=tk.LEFT)
         
@@ -97,25 +91,29 @@ class WordApp:
             tags="container"
         )
         
-        # Bind events
+        # events to update stuff
         self.canvas.bind("<Configure>", self.on_canvas_configure)
         self.container.bind("<Configure>", self.on_frame_configure)
 
     def toggle_bold(self):
         """Toggle bold formatting state"""
+        # TO DO: needs to work on export pdf !
         self.bold_on = not self.bold_on
         self.bold_btn.state(['pressed' if self.bold_on else '!pressed'])
 
     def create_header_table(self, parent, max_width):
         """
-        Create a header table as a Frame with Labels that simulates the given HTML table.
-        The table is set to not exceed max_width (e.g. the text widget’s width).
+        Create the header
+
+        TO DO: 
+        - Style it
+        - Fix width
         """
         header = tk.Frame(parent, width=max_width)
-        # Compute each cell’s width (equal division over 12 columns)
+        # Width Fix attempt 1 (Calculate cell width based 12 columns)
         cell_width = int(max_width / 12)
 
-        # For each Label we add, include 'wraplength=cell_width' so that long text wraps.
+        # 'wraplength=cell_width' to set width according to AI
         tk.Label(header,
                  text="EXPLORATION‐PRODUCTION\nDivision Exploration\nDirection des\nOperations\nExploration\nDpt: Géologie\nHASSI ‐ MESSAOUD",
                  relief="solid", borderwidth=1, padx=5, pady=5, anchor="w", justify="left",
@@ -133,7 +131,7 @@ class WordApp:
                  wraplength=cell_width)\
            .grid(row=0, column=11, sticky="nsew")
 
-        # Row 1
+        # Row 2
         tk.Label(header, text="Sigle :", relief="solid", borderwidth=1, padx=5, pady=5,
                  wraplength=cell_width)\
            .grid(row=1, column=10, sticky="nsew")
@@ -141,7 +139,7 @@ class WordApp:
                  wraplength=cell_width)\
            .grid(row=1, column=11, sticky="nsew")
 
-        # Row 2
+        # Row 3
         tk.Label(header, text="Permis :", relief="solid", borderwidth=1, padx=5, pady=5,
                  wraplength=cell_width)\
            .grid(row=2, column=10, sticky="nsew")
@@ -149,7 +147,7 @@ class WordApp:
                  wraplength=cell_width)\
            .grid(row=2, column=11, sticky="nsew")
 
-        # Row 3
+        # Row 4
         tk.Label(header, text="Bloc :", relief="solid", borderwidth=1, padx=5, pady=5,
                  wraplength=cell_width)\
            .grid(row=3, column=10, sticky="nsew")
@@ -157,7 +155,7 @@ class WordApp:
                  wraplength=cell_width)\
            .grid(row=3, column=11, sticky="nsew")
 
-        # Row 4: Lower group, cell spanning multiple rows.
+        # Row 5
         tk.Label(header, text="Echelle : 1/40", relief="solid", borderwidth=1, padx=5, pady=5,
                  wraplength=cell_width)\
            .grid(row=4, column=0, columnspan=6, rowspan=3, sticky="nsew")
@@ -171,7 +169,7 @@ class WordApp:
                  wraplength=cell_width)\
            .grid(row=4, column=11, sticky="nsew")
 
-        # Row 5
+        # Row 6
         tk.Label(header, text='Couronne: 6" x 2 5/8"', relief="solid", borderwidth=1, padx=5, pady=5,
                  wraplength=cell_width)\
            .grid(row=5, column=6, columnspan=3, sticky="nsew")
@@ -185,7 +183,7 @@ class WordApp:
                  wraplength=cell_width)\
            .grid(row=5, column=11, sticky="nsew")
 
-        # Row 6
+        # Row 7
         tk.Label(header, text="Type: Ci3126", relief="solid", borderwidth=1, padx=5, pady=5,
                  wraplength=cell_width)\
            .grid(row=6, column=6, columnspan=3, sticky="nsew")
@@ -199,7 +197,7 @@ class WordApp:
                  wraplength=cell_width)\
            .grid(row=6, column=11, sticky="nsew")
 
-        # Row 7: Lower sub-table header.
+        # Row 8
         tk.Label(header, text="Côtes (m)", relief="solid", borderwidth=1, padx=5, pady=5,
                  wraplength=cell_width)\
            .grid(row=7, column=0, rowspan=2, sticky="nsew")
@@ -229,7 +227,7 @@ class WordApp:
                  wraplength=cell_width)\
            .grid(row=7, column=9, columnspan=3, rowspan=2, sticky="nsew")
 
-        # Row 8: Sub-header row.
+        # Row 9
         tk.Label(header, text="Echan", relief="solid", borderwidth=1, padx=5, pady=5,
                  wraplength=cell_width)\
            .grid(row=8, column=2, sticky="nsew")
@@ -246,7 +244,7 @@ class WordApp:
                  wraplength=cell_width)\
            .grid(row=8, column=8, sticky="nsew")
 
-        # Row 9: Input row.
+        # Row 10: Input row.
         for col in range(9):
             tk.Label(header, text="Input", relief="solid", borderwidth=1, padx=5, pady=5,
                      wraplength=cell_width)\
@@ -255,7 +253,7 @@ class WordApp:
                  wraplength=cell_width)\
            .grid(row=9, column=9, columnspan=3, sticky="nsew")
 
-        # Configure grid so each column/row expands equally.
+        # Configure grid weight=1 now so each column/row expands equally.
         for col in range(12):
             header.grid_columnconfigure(col, weight=1)
         for row in range(10):
@@ -264,33 +262,39 @@ class WordApp:
         return header
 
     def add_new_page(self):
-        """Create a new centered A4 page with proper dimensions and add a header table."""
+        """
+        Create a new centered A4 page and add the header.
+        
+        Todo:
+            - Adding zoom meaning could effect size
+            - Remove add button after adding (max pages is 2)
+        """
         # A4 dimensions in pixels (21cm x 29.7cm at 96dpi)
         a4_width, a4_height = int(21/2.54*96), int(29.7/2.54*96)
 
-        # Page frame with improved shadow
+        # Page frame
         page_frame = ttk.Frame(self.container)
         page_frame.pack(pady=20, expand=True)
 
-        # Create page canvas with exact A4 dimensions
+        # Create page canvas with A4 dimensions
         page_canvas = tk.Canvas(page_frame, width=a4_width, height=a4_height,
                                 bg="white", highlightthickness=0)
         page_canvas.pack()
 
-        # Add subtle shadow effect
+        # shadow effect
         page_canvas.create_rectangle(2, 2, a4_width+2, a4_height+2, fill='#e0e0e0', outline='')
         page_canvas.create_rectangle(0, 0, a4_width, a4_height, fill="white")
 
-        # Create text widget with proper margins
+        # text inpit with margins
         text_widget = tk.Text(page_canvas, wrap="word", bg="white", bd=0,
                               font=('Arial', self.taille), padx=40, pady=50)
         text_widget.place(x=0, y=0, width=a4_width, height=a4_height)
 
-        # Calculate available width for header from the text widget’s size.
-        available_width = a4_width - 80  # subtract horizontal paddings (2*40)
+        # Get width and add header
+        available_width = a4_width - 80 
         header_frame = self.create_header_table(text_widget, available_width)
         text_widget.window_create("1.0", window=header_frame)
-        text_widget.insert("end", "\n")  # add some spacing after header
+        text_widget.insert("end", "\n")  # new line after
 
         # Configure bindings, tags etc.
         text_widget.tag_configure("bold", font=('Arial', self.taille, 'bold'))
@@ -322,7 +326,11 @@ class WordApp:
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
     def insert_table(self):
-        """Insert a table into the current page"""
+        """Insert a table into the current page
+        
+        Todo:
+            - remove it useless
+        """
         if not self.current_page:
             return
 
@@ -347,7 +355,7 @@ class WordApp:
             rows = rows_var.get()
             cols = cols_var.get()
             dialog.destroy()
-            self.current_page.focus_set()  # Refocus the text widget
+            self.current_page.focus_set() 
             self.create_table(rows, cols)
 
         ttk.Button(dialog, text="OK", command=on_ok).grid(row=2, column=0, columnspan=2, pady=5)
@@ -377,12 +385,17 @@ class WordApp:
     def export_pdf_header(self, pdf, a4_width, y_position, margin):
         """Draw a header table at the given y_position on the PDF canvas.
            Returns the new y_position after drawing the header.
+            
+            Todo:
+                - Fix merged cells
+                - Add styling
+                - Add image
         """
         from reportlab.platypus import Table, TableStyle
         from reportlab.lib import colors
 
         # Define table data (each row has 12 columns).
-        # Empty strings for cells that are merged.
+        # Empty strings for cells that are merged. (not wroking fix)
         header_data = [
             [ "EXPLORATION‐PRODUCTION\nDivision Exploration\nDirection des\nOperations\nExploration\nDpt: Géologie\nHASSI ‐ MESSAOUD", "", "", "", "", "",
               "Carotté : 18 m\nRécupéré : 18m soit 100%\nDate d'extraction de la carotte: 27/06/17", "", "", "", "Puits :", "Nord West Trig-2" ],
@@ -401,9 +414,10 @@ class WordApp:
             [ "Input", "Input", "Input", "Input", "Input", "Input", "Input", "Input", "Input", "Input", "", "" ]
         ]
 
-        # Determine total available width (inside margins).
+        # Determine total available width (SOME HOW THIS WORKS!).
         total_width = a4_width - 2 * margin
-        # Define column widths equally.
+
+        # Define column widths equally For now.
         col_width = total_width / 12
         col_widths = [col_width] * 12
         # Define row heights (adjust these values as needed)
@@ -412,39 +426,34 @@ class WordApp:
         # Create the Table
         table = Table(header_data, colWidths=col_widths, rowHeights=row_heights)
 
-        # Apply spans to mimic your design.
+        # Apply spans to table
         style = TableStyle([
-            # Row 0: Merge columns 0-5 and 6-9.
-            ('SPAN', (0,0), (5,3)),
-            ('SPAN', (6,0), (9,3)),
-            # Rows 0-3: merge columns 10-11 per row.
-            ('SPAN', (10,0), (11,0)),
-            ('SPAN', (10,1), (11,1)),
-            ('SPAN', (10,2), (11,2)),
-            ('SPAN', (10,3), (11,3)),
-            # Row 4: merge columns 0-5, merge 6-8 and merge 9-10.
-            ('SPAN', (0,4), (5,4)),
-            ('SPAN', (6,4), (8,4)),
-            ('SPAN', (9,4), (10,4)),
-            # Row 5 & 6: merge cells in the first part may remain empty if same as above.
-            ('SPAN', (6,5), (8,5)),
-            ('SPAN', (6,6), (8,6)),
+            # Row 0: Merge columns and rows (big blocks)
+            ('SPAN', (0,0), (5,3)), # LOGO
+            ('SPAN', (6,0), (9,3)), # Date et info
+            # Row 4: merge columns (0-5, 6-8, 9-10)
+            ('SPAN', (0,4), (5,6)), # Echele
+            ('SPAN', (6,4), (8,4)), # carrotier
+            ('SPAN', (9,4), (10,4)), # Type boue
+            # Row 5 & 6: only one block per row (take 3 columns)
+            ('SPAN', (6,5), (8,5)), # Couronne
+            ('SPAN', (6,6), (8,6)), # Type
             # Row 7: merge columns 3-4 and 9-11.
-            ('SPAN', (3,7), (4,7)),
-            ('SPAN', (9,7), (11,7)),
-            # Row 7 and 8: merge cells that span two rows: columns 0, 1, 5, 6.
-            ('SPAN', (0,7), (0,8)),
-            ('SPAN', (1,7), (1,8)),
-            ('SPAN', (5,7), (5,8)),
-            ('SPAN', (6,7), (6,8)),
-            # Row 7 and 8: merge for description column (already merged in row 7)
-            ('SPAN', (9,7), (11,8)),
+            ('SPAN', (3,7), (4,7)), # indices
+            ('SPAN', (9,7), (11,8)), # Description
+            # Row 7 and 8: cells that take two rows: columns 0, 1, 5, 6.
+            ('SPAN', (0,7), (0,8)), # Cotes
+            ('SPAN', (1,7), (1,8)), # LOG
+            ('SPAN', (5,7), (5,8)), # Fissures
+            ('SPAN', (6,7), (6,8)), # Pondage
+
             # Set grid and background colors
             ('GRID', (0,0), (-1,-1), 0.25, colors.black),
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('FONTSIZE', (0,0), (-1,-1), 7)
         ])
         table.setStyle(style)
+
 
         # Wrap the table to determine its height.
         table_width, table_height = table.wrap(total_width, 0)
@@ -478,8 +487,9 @@ class WordApp:
             # Draw the header at the top of the PDF page.
             y_position = self.export_pdf_header(pdf, a4_width, y_position, margin)
 
-            # Now process the rest of the page content.
+            # Rest of the page.
             # This sample code “dumps” the text content and any inserted tables.
+            # MEANING NEEDS FIX (Too long of a text goes outsid page)
             content = page.dump("1.0", "end-1c", window=True, text=True)
             elements = []
             current_text = []
