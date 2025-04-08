@@ -25,7 +25,7 @@ class WordApp:
         self.pages = []
         self.bold_on = False
         self.current_font = ("Arial", 12)
-        self.root.taille = 12
+        self.taille = 12
         self.current_page = None  # Track the currently focused page
         
         # Configure styles
@@ -106,37 +106,201 @@ class WordApp:
         self.bold_on = not self.bold_on
         self.bold_btn.state(['pressed' if self.bold_on else '!pressed'])
 
+    def create_header_table(self, parent, max_width):
+        """
+        Create a header table as a Frame with Labels that simulates the given HTML table.
+        The table is set to not exceed max_width (e.g. the text widget’s width).
+        """
+        header = tk.Frame(parent, width=max_width)
+        # Compute each cell’s width (equal division over 12 columns)
+        cell_width = int(max_width / 12)
+
+        # For each Label we add, include 'wraplength=cell_width' so that long text wraps.
+        tk.Label(header,
+                 text="EXPLORATION‐PRODUCTION\nDivision Exploration\nDirection des\nOperations\nExploration\nDpt: Géologie\nHASSI ‐ MESSAOUD",
+                 relief="solid", borderwidth=1, padx=5, pady=5, anchor="w", justify="left",
+                 wraplength=cell_width)\
+           .grid(row=0, column=0, columnspan=6, rowspan=4, sticky="nsew")
+        tk.Label(header,
+                 text="Carotté : 18 m\nRécupéré : 18m soit 100%\nDate d'extraction de la carotte: 27/06/17",
+                 relief="solid", borderwidth=1, padx=5, pady=5, anchor="w", justify="left",
+                 wraplength=cell_width)\
+           .grid(row=0, column=6, columnspan=4, rowspan=4, sticky="nsew")
+        tk.Label(header, text="Puits :", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=0, column=10, sticky="nsew")
+        tk.Label(header, text="Nord West Trig-2", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=0, column=11, sticky="nsew")
+
+        # Row 1
+        tk.Label(header, text="Sigle :", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=1, column=10, sticky="nsew")
+        tk.Label(header, text="NWT-2", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=1, column=11, sticky="nsew")
+
+        # Row 2
+        tk.Label(header, text="Permis :", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=2, column=10, sticky="nsew")
+        tk.Label(header, text="Ohanet II", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=2, column=11, sticky="nsew")
+
+        # Row 3
+        tk.Label(header, text="Bloc :", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=3, column=10, sticky="nsew")
+        tk.Label(header, text="234a", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=3, column=11, sticky="nsew")
+
+        # Row 4: Lower group, cell spanning multiple rows.
+        tk.Label(header, text="Echelle : 1/40", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=4, column=0, columnspan=6, rowspan=3, sticky="nsew")
+        tk.Label(header, text="Carottier: 12440525", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=4, column=6, columnspan=3, sticky="nsew")
+        tk.Label(header, text="Type de Boue : OBM", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=4, column=9, columnspan=2, sticky="nsew")
+        tk.Label(header, text="Carrote: 11", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=4, column=11, sticky="nsew")
+
+        # Row 5
+        tk.Label(header, text='Couronne: 6" x 2 5/8"', relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=5, column=6, columnspan=3, sticky="nsew")
+        tk.Label(header, text="D : 1,08", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=5, column=9, sticky="nsew")
+        tk.Label(header, text="Tete: ", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=5, column=10, sticky="nsew")
+        tk.Label(header, text="2930m", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=5, column=11, sticky="nsew")
+
+        # Row 6
+        tk.Label(header, text="Type: Ci3126", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=6, column=6, columnspan=3, sticky="nsew")
+        tk.Label(header, text="FUN VIS (s/qt) : 46", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=6, column=9, sticky="nsew")
+        tk.Label(header, text="Pied:", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=6, column=10, sticky="nsew")
+        tk.Label(header, text="3948m", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=6, column=11, sticky="nsew")
+
+        # Row 7: Lower sub-table header.
+        tk.Label(header, text="Côtes (m)", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=7, column=0, rowspan=2, sticky="nsew")
+        tk.Label(header, text="Log", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=7, column=1, rowspan=2, sticky="nsew")
+        tk.Label(header, text="Nº", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=7, column=2, sticky="nsew")
+        tk.Label(header, text="INDICES", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=7, column=3, columnspan=2, sticky="nsew")
+        tk.Label(header, text="Fissures", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=7, column=5, rowspan=2, sticky="nsew")
+        tk.Label(header, text="Pendage", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=7, column=6, rowspan=2, sticky="nsew")
+        tk.Label(header, text="Calcimètrie", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=7, column=7, sticky="nsew")
+        tk.Label(header, text="Age", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=7, column=8, sticky="nsew")
+        tk.Label(header, text="D E S C R I P T I O N L I T H O L O G I Q U E & O B S E R V A T I O N S", 
+                 relief="solid", borderwidth=1, padx=5, pady=5, anchor="w", justify="left",
+                 wraplength=cell_width)\
+           .grid(row=7, column=9, columnspan=3, rowspan=2, sticky="nsew")
+
+        # Row 8: Sub-header row.
+        tk.Label(header, text="Echan", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=8, column=2, sticky="nsew")
+        tk.Label(header, text="direct", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=8, column=3, sticky="nsew")
+        tk.Label(header, text="Indir", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=8, column=4, sticky="nsew")
+        tk.Label(header, text="25", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=8, column=7, sticky="nsew")
+        tk.Label(header, text="75", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=8, column=8, sticky="nsew")
+
+        # Row 9: Input row.
+        for col in range(9):
+            tk.Label(header, text="Input", relief="solid", borderwidth=1, padx=5, pady=5,
+                     wraplength=cell_width)\
+               .grid(row=9, column=col, sticky="nsew")
+        tk.Label(header, text="Input", relief="solid", borderwidth=1, padx=5, pady=5,
+                 wraplength=cell_width)\
+           .grid(row=9, column=9, columnspan=3, sticky="nsew")
+
+        # Configure grid so each column/row expands equally.
+        for col in range(12):
+            header.grid_columnconfigure(col, weight=1)
+        for row in range(10):
+            header.grid_rowconfigure(row, weight=1)
+
+        return header
+
     def add_new_page(self):
-        """Create a new centered A4 page with proper dimensions"""
+        """Create a new centered A4 page with proper dimensions and add a header table."""
         # A4 dimensions in pixels (21cm x 29.7cm at 96dpi)
         a4_width, a4_height = int(21/2.54*96), int(29.7/2.54*96)
-        
+
         # Page frame with improved shadow
         page_frame = ttk.Frame(self.container)
         page_frame.pack(pady=20, expand=True)
-        
+
         # Create page canvas with exact A4 dimensions
         page_canvas = tk.Canvas(page_frame, width=a4_width, height=a4_height,
-                              bg="white", highlightthickness=0)
+                                bg="white", highlightthickness=0)
         page_canvas.pack()
-        
+
         # Add subtle shadow effect
         page_canvas.create_rectangle(2, 2, a4_width+2, a4_height+2, fill='#e0e0e0', outline='')
         page_canvas.create_rectangle(0, 0, a4_width, a4_height, fill="white")
 
-        # Add text widget with proper margins
+        # Create text widget with proper margins
         text_widget = tk.Text(page_canvas, wrap="word", bg="white", bd=0,
-                            font=('Arial', self.root.taille), padx=40, pady=50)
+                              font=('Arial', self.taille), padx=40, pady=50)
         text_widget.place(x=0, y=0, width=a4_width, height=a4_height)
-        
-        # Configure tags and bindings
-        text_widget.tag_configure("bold", font=('Arial', self.root.taille, 'bold'))
+
+        # Calculate available width for header from the text widget’s size.
+        available_width = a4_width - 80  # subtract horizontal paddings (2*40)
+        header_frame = self.create_header_table(text_widget, available_width)
+        text_widget.window_create("1.0", window=header_frame)
+        text_widget.insert("end", "\n")  # add some spacing after header
+
+        # Configure bindings, tags etc.
+        text_widget.tag_configure("bold", font=('Arial', self.taille, 'bold'))
         text_widget.bind("<KeyPress>", self.handle_key_press)
         text_widget.bind("<FocusIn>", lambda e: self.set_current_page(text_widget))
-        
+
         self.pages.append(text_widget)
         text_widget.focus_set()
         self.current_page = text_widget
+
 
     def set_current_page(self, page_widget):
         """Set the currently focused page"""
@@ -210,8 +374,90 @@ class WordApp:
         # Insert table at current cursor position
         text_widget.window_create("insert", window=table_frame)
 
+    def export_pdf_header(self, pdf, a4_width, y_position, margin):
+        """Draw a header table at the given y_position on the PDF canvas.
+           Returns the new y_position after drawing the header.
+        """
+        from reportlab.platypus import Table, TableStyle
+        from reportlab.lib import colors
+
+        # Define table data (each row has 12 columns).
+        # Empty strings for cells that are merged.
+        header_data = [
+            [ "EXPLORATION‐PRODUCTION\nDivision Exploration\nDirection des\nOperations\nExploration\nDpt: Géologie\nHASSI ‐ MESSAOUD", "", "", "", "", "",
+              "Carotté : 18 m\nRécupéré : 18m soit 100%\nDate d'extraction de la carotte: 27/06/17", "", "", "", "Puits :", "Nord West Trig-2" ],
+            [ "", "", "", "", "", "", "", "", "", "", "Sigle :", "NWT-2" ],
+            [ "", "", "", "", "", "", "", "", "", "", "Permis :", "Ohanet II" ],
+            [ "", "", "", "", "", "", "", "", "", "", "Bloc :", "234a" ],
+            [ "Echelle : 1/40", "", "", "", "", "",
+              "Carottier: 12440525", "", "", "Type de Boue : OBM", "", "Carrote: 11" ],
+            [ "", "", "", "", "", "",
+              "Couronne: 6\" x 2 5/8\"", "", "", "D : 1,08", "Tete:", "2930m" ],
+            [ "", "", "", "", "", "",
+              "Type: Ci3126", "", "", "FUN VIS (s/qt) : 46", "Pied:", "3948m" ],
+            [ "Côtes (m)", "Log", "Nº", "INDICES", "", "Fissures", "Pendage", "Calcimètrie", "Age",
+              "D E S C R I P T I O N L I T H O L O G I Q U E & O B S E R V A T I O N S", "", "" ],
+            [ "", "", "Echan", "direct", "Indir", "", "", "25", "75", "", "", "" ],
+            [ "Input", "Input", "Input", "Input", "Input", "Input", "Input", "Input", "Input", "Input", "", "" ]
+        ]
+
+        # Determine total available width (inside margins).
+        total_width = a4_width - 2 * margin
+        # Define column widths equally.
+        col_width = total_width / 12
+        col_widths = [col_width] * 12
+        # Define row heights (adjust these values as needed)
+        row_heights = [30, 20, 20, 20, 30, 20, 20, 20, 20, 20]
+
+        # Create the Table
+        table = Table(header_data, colWidths=col_widths, rowHeights=row_heights)
+
+        # Apply spans to mimic your design.
+        style = TableStyle([
+            # Row 0: Merge columns 0-5 and 6-9.
+            ('SPAN', (0,0), (5,3)),
+            ('SPAN', (6,0), (9,3)),
+            # Rows 0-3: merge columns 10-11 per row.
+            ('SPAN', (10,0), (11,0)),
+            ('SPAN', (10,1), (11,1)),
+            ('SPAN', (10,2), (11,2)),
+            ('SPAN', (10,3), (11,3)),
+            # Row 4: merge columns 0-5, merge 6-8 and merge 9-10.
+            ('SPAN', (0,4), (5,4)),
+            ('SPAN', (6,4), (8,4)),
+            ('SPAN', (9,4), (10,4)),
+            # Row 5 & 6: merge cells in the first part may remain empty if same as above.
+            ('SPAN', (6,5), (8,5)),
+            ('SPAN', (6,6), (8,6)),
+            # Row 7: merge columns 3-4 and 9-11.
+            ('SPAN', (3,7), (4,7)),
+            ('SPAN', (9,7), (11,7)),
+            # Row 7 and 8: merge cells that span two rows: columns 0, 1, 5, 6.
+            ('SPAN', (0,7), (0,8)),
+            ('SPAN', (1,7), (1,8)),
+            ('SPAN', (5,7), (5,8)),
+            ('SPAN', (6,7), (6,8)),
+            # Row 7 and 8: merge for description column (already merged in row 7)
+            ('SPAN', (9,7), (11,8)),
+            # Set grid and background colors
+            ('GRID', (0,0), (-1,-1), 0.25, colors.black),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('FONTSIZE', (0,0), (-1,-1), 7)
+        ])
+        table.setStyle(style)
+
+        # Wrap the table to determine its height.
+        table_width, table_height = table.wrap(total_width, 0)
+        # Draw the table on the PDF at the specified y_position
+        # (The table will be drawn inside the margins.)
+        table.drawOn(pdf, margin, y_position - table_height)
+
+        # Return the new y_position (subtract table height plus some spacing)
+        return y_position - table_height - 10
+
+
     def export_pdf(self):
-        """Export all pages to PDF including tables"""
+        """Export all pages to PDF including header and tables."""
         file_path = filedialog.asksaveasfilename(
             defaultextension=".pdf",
             filetypes=[("PDF Files", "*.pdf")]
@@ -227,7 +473,13 @@ class WordApp:
         cell_width = 60
 
         for page in self.pages:
-            # Collect elements (text and tables) in order
+            y_position = a4_height - margin
+            pdf.setFont("Helvetica", 12)
+            # Draw the header at the top of the PDF page.
+            y_position = self.export_pdf_header(pdf, a4_width, y_position, margin)
+
+            # Now process the rest of the page content.
+            # This sample code “dumps” the text content and any inserted tables.
             content = page.dump("1.0", "end-1c", window=True, text=True)
             elements = []
             current_text = []
@@ -235,25 +487,18 @@ class WordApp:
                 if part[0] == 'text':
                     current_text.append(part[1])
                 elif part[0] == 'window':
-                    # Flush current text
                     if current_text:
                         elements.append(('text', ''.join(current_text)))
                         current_text = []
-                    # Check if the window is a table
                     widget = page.window_cget(part[2], 'window')
                     if hasattr(widget, 'table_entries'):
                         elements.append(('table', widget.table_entries))
-            # Add any remaining text
             if current_text:
                 elements.append(('text', ''.join(current_text)))
-
-            y_position = a4_height - margin
-            pdf.setFont("Helvetica", 12)
 
             for elem in elements:
                 if elem[0] == 'text':
                     text = elem[1]
-                    # Split into lines and wrap
                     lines = []
                     for line in text.split('\n'):
                         words = line.split()
@@ -261,18 +506,18 @@ class WordApp:
                         current_width = 0
                         for word in words:
                             word_width = pdf.stringWidth(word, "Helvetica", 12)
-                            if current_line and (current_width + word_width + pdf.stringWidth(' ', "Helvetica", 12) > (a4_width - 2*margin)):
+                            space_width = pdf.stringWidth(' ', "Helvetica", 12)
+                            if current_line and (current_width + word_width + space_width > (a4_width - 2*margin)):
                                 lines.append(' '.join(current_line))
                                 current_line = [word]
                                 current_width = word_width
                             else:
                                 if current_line:
-                                    current_width += pdf.stringWidth(' ', "Helvetica", 12)
+                                    current_width += space_width
                                 current_line.append(word)
                                 current_width += word_width
                         if current_line:
                             lines.append(' '.join(current_line))
-                    # Add each line to the PDF
                     for line in lines:
                         if y_position < margin:
                             pdf.showPage()
@@ -284,31 +529,22 @@ class WordApp:
                     entries = elem[1]
                     rows = len(entries)
                     cols = len(entries[0]) if rows > 0 else 0
-
-                    # Calculate required height for the table
                     table_height = rows * cell_height
-                    # Check if there's enough space
                     if y_position - table_height < margin:
                         pdf.showPage()
                         y_position = a4_height - margin
-
-                    # Draw table
                     table_x = margin
-                    table_y = y_position - cell_height  # Start from top
+                    table_y = y_position - cell_height
                     for i in range(rows):
                         for j in range(cols):
                             entry = entries[i][j]
                             text = entry.get()
-                            # Draw cell border
                             pdf.rect(table_x + j*cell_width, table_y - i*cell_height, cell_width, cell_height)
-                            # Draw cell text
                             pdf.drawString(table_x + j*cell_width + 2, table_y - i*cell_height + 2, text)
-                    # Update y_position
-                    y_position = table_y - (rows * cell_height) - line_height
-
+                    y_position = table_y - rows * cell_height - line_height
             pdf.showPage()
-
         pdf.save()
+
 
 if __name__ == "__main__":
     root = tk.Tk()
