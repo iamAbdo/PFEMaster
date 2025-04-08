@@ -4,6 +4,31 @@ from tkinter import ttk, font as tkfont, filedialog
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas as pdf_canvas
 
+from reportlab.platypus.flowables import Flowable
+from reportlab.lib.units import mm
+
+class RotatedText(Flowable):
+    def __init__(self, text, angle=90):
+        Flowable.__init__(self)
+        self.text = text
+        self.angle = angle
+
+    def draw(self):
+        canvas = self.canv
+        canvas.saveState()
+        # Rotate from bottom-left corner
+        canvas.rotate(self.angle)
+        canvas.drawString(0, 0, self.text)
+        canvas.restoreState()
+
+    def wrap(self, *args):
+        # Return dimensions needed for this flowable
+        canvas = self.canv
+        font_size = canvas._fontsize
+        width = font_size * 1.2  # Approximate width needed
+        height = canvas.stringWidth(self.text)  # Text length becomes height
+        return width, height
+
 class WordApp:
     def __init__(self, root):
         self.root = root
@@ -391,13 +416,22 @@ class WordApp:
                 - Add styling
                 - Add image
         """
-        from reportlab.platypus import Table, TableStyle
+        from reportlab.platypus import Table, TableStyle, Paragraph, KeepInFrame
         from reportlab.lib import colors
+        from reportlab.lib.styles import ParagraphStyle
+        from reportlab.lib.enums import TA_CENTER
+        def rotated_text(text, font_size=7):
+            """Create properly rotated text element"""
+            from reportlab.lib.styles import getSampleStyleSheet
+            style = getSampleStyleSheet()['Normal']
+            style.fontSize = font_size
+            style.leading = font_size
+            return RotatedText(text, angle=90)
 
         # Define table data (each row has 12 columns).
-        # Empty strings for cells that are merged. (not wroking fix)
+        # Empty strings for cells that are merged
         header_data = [
-            [ "EXPLORATION‐PRODUCTION\nDivision Exploration\nDirection des\nOperations\nExploration\nDpt: Géologie\nHASSI ‐ MESSAOUD", "", "", "", "", "",
+            [ "EXPLORATION‐PRODUCTION\nDivision Exploration\nDirection des Operations\nExploration\nDpt: Géologie\nHASSI ‐ MESSAOUD", "", "", "", "", "",
               "Carotté : 18 m\nRécupéré : 18m soit 100%\nDate d'extraction de la carotte: 27/06/17", "", "", "", "Puits :", "Nord West Trig-2" ],
             [ "", "", "", "", "", "", "", "", "", "", "Sigle :", "NWT-2" ],
             [ "", "", "", "", "", "", "", "", "", "", "Permis :", "Ohanet II" ],
@@ -408,20 +442,35 @@ class WordApp:
               "Couronne: 6\" x 2 5/8\"", "", "", "D : 1,08", "Tete:", "2930m" ],
             [ "", "", "", "", "", "",
               "Type: Ci3126", "", "", "FUN VIS (s/qt) : 46", "Pied:", "3948m" ],
-            [ "Côtes (m)", "Log", "Nº", "INDICES", "", "Fissures", "Pendage", "Calcimètrie", "Age",
-              "D E S C R I P T I O N L I T H O L O G I Q U E & O B S E R V A T I O N S", "", "" ],
-            [ "", "", "Echan", "direct", "Indir", "", "", "25", "75", "", "", "" ],
+            ["Côtes (m)", "Log", "Nº", "INDICES", "", 
+              rotated_text("Fissures"), 
+              rotated_text("Pendage"), 
+              "Calcimètrie", "Age",
+              "DESCRIPTION LITHOLOGIQUE & OBSERVATIONS", "", ""],
+            ["", "", 
+              rotated_text("Echant"), 
+              rotated_text("direct"), 
+              rotated_text("Indir."), 
+              "", "", "25", "75", "", "", ""],
             [ "Input", "Input", "Input", "Input", "Input", "Input", "Input", "Input", "Input", "Input", "", "" ]
         ]
 
         # Determine total available width (SOME HOW THIS WORKS!).
         total_width = a4_width - 2 * margin
 
-        # Define column widths equally For now.
-        col_width = total_width / 12
-        col_widths = [col_width] * 12
-        # Define row heights (adjust these values as needed)
-        row_heights = [30, 20, 20, 20, 30, 20, 20, 20, 20, 20]
+        # Define row heights (last 6 columns dboule first 6 width)
+        x = total_width / 18
+        col_widths = [x] * 6 + [2*x] * 6
+
+        # # text vertical
+        # col_widths[5] = 10  # Fissures column
+        # col_widths[6] = 10  # Pendage column
+        # col_widths[2] = 10  # Echant column
+        # col_widths[3] = 10  # direct column
+        # col_widths[4] = 10  # Indir. column
+
+        # Define row heights (to be adjusted later)
+        row_heights = [30, 20, 20, 20, 30, 20, 20, 40, 40, 20]
 
         # Create the Table
         table = Table(header_data, colWidths=col_widths, rowHeights=row_heights)
@@ -447,10 +496,10 @@ class WordApp:
             ('SPAN', (5,7), (5,8)), # Fissures
             ('SPAN', (6,7), (6,8)), # Pondage
 
-            # Set grid and background colors
             ('GRID', (0,0), (-1,-1), 0.25, colors.black),
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-            ('FONTSIZE', (0,0), (-1,-1), 7)
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('FONTSIZE', (0,0), (-1,-1), 7),
         ])
         table.setStyle(style)
 
