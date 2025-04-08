@@ -25,7 +25,7 @@ class RotatedText(Flowable):
         # Return dimensions needed for this flowable
         canvas = self.canv
         font_size = canvas._fontsize
-        width = font_size * 1.2  # Approximate width needed
+        width = font_size
         height = canvas.stringWidth(self.text)  # Text length becomes height
         return width, height
 
@@ -141,132 +141,96 @@ class WordApp:
         # 'wraplength=cell_width' to set width according to AI
         tk.Label(header,
                  text="EXPLORATION‐PRODUCTION\nDivision Exploration\nDirection des\nOperations\nExploration\nDpt: Géologie\nHASSI ‐ MESSAOUD",
-                 relief="solid", borderwidth=1, padx=5, pady=5, anchor="w", justify="left",
-                 wraplength=cell_width)\
+                 relief="solid", borderwidth=1, padx=5, pady=5, anchor="w", justify="left")\
            .grid(row=0, column=0, columnspan=6, rowspan=4, sticky="nsew")
         tk.Label(header,
                  text="Carotté : 18 m\nRécupéré : 18m soit 100%\nDate d'extraction de la carotte: 27/06/17",
-                 relief="solid", borderwidth=1, padx=5, pady=5, anchor="w", justify="left",
-                 wraplength=cell_width)\
+                 relief="solid", borderwidth=1, padx=5, pady=5, anchor="w", justify="left")\
            .grid(row=0, column=6, columnspan=4, rowspan=4, sticky="nsew")
-        tk.Label(header, text="Puits :", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="Puits :", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=0, column=10, sticky="nsew")
-        tk.Label(header, text="Nord West Trig-2", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="Nord West Trig-2", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=0, column=11, sticky="nsew")
 
         # Row 2
-        tk.Label(header, text="Sigle :", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="Sigle :", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=1, column=10, sticky="nsew")
-        tk.Label(header, text="NWT-2", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="NWT-2", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=1, column=11, sticky="nsew")
 
         # Row 3
-        tk.Label(header, text="Permis :", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="Permis :", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=2, column=10, sticky="nsew")
-        tk.Label(header, text="Ohanet II", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="Ohanet II", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=2, column=11, sticky="nsew")
 
         # Row 4
-        tk.Label(header, text="Bloc :", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="Bloc :", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=3, column=10, sticky="nsew")
-        tk.Label(header, text="234a", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="234a", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=3, column=11, sticky="nsew")
 
         # Row 5
-        tk.Label(header, text="Echelle : 1/40", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="Echelle : 1/40", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=4, column=0, columnspan=6, rowspan=3, sticky="nsew")
-        tk.Label(header, text="Carottier: 12440525", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="Carottier: 12440525", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=4, column=6, columnspan=3, sticky="nsew")
-        tk.Label(header, text="Type de Boue : OBM", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="Type de Boue : OBM", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=4, column=9, columnspan=2, sticky="nsew")
-        tk.Label(header, text="Carrote: 11", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="Carrote: 11", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=4, column=11, sticky="nsew")
 
         # Row 6
-        tk.Label(header, text='Couronne: 6" x 2 5/8"', relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text='Couronne: 6" x 2 5/8"', relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=5, column=6, columnspan=3, sticky="nsew")
-        tk.Label(header, text="D : 1,08", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="D : 1,08", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=5, column=9, sticky="nsew")
-        tk.Label(header, text="Tete: ", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="Tete: ", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=5, column=10, sticky="nsew")
-        tk.Label(header, text="2930m", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="2930m", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=5, column=11, sticky="nsew")
 
         # Row 7
-        tk.Label(header, text="Type: Ci3126", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="Type: Ci3126", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=6, column=6, columnspan=3, sticky="nsew")
-        tk.Label(header, text="FUN VIS (s/qt) : 46", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="FUN VIS (s/qt) : 46", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=6, column=9, sticky="nsew")
-        tk.Label(header, text="Pied:", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="Pied:", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=6, column=10, sticky="nsew")
-        tk.Label(header, text="3948m", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="3948m", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=6, column=11, sticky="nsew")
 
         # Row 8
-        tk.Label(header, text="Côtes (m)", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="Côtes (m)", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=7, column=0, rowspan=2, sticky="nsew")
-        tk.Label(header, text="Log", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="Log", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=7, column=1, rowspan=2, sticky="nsew")
-        tk.Label(header, text="Nº", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="Nº", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=7, column=2, sticky="nsew")
-        tk.Label(header, text="INDICES", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="INDICES", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=7, column=3, columnspan=2, sticky="nsew")
-        tk.Label(header, text="Fissures", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="Fissures", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=7, column=5, rowspan=2, sticky="nsew")
-        tk.Label(header, text="Pendage", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="Pendage", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=7, column=6, rowspan=2, sticky="nsew")
-        tk.Label(header, text="Calcimètrie", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="Calcimètrie", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=7, column=7, sticky="nsew")
-        tk.Label(header, text="Age", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="Age", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=7, column=8, sticky="nsew")
         tk.Label(header, text="D E S C R I P T I O N L I T H O L O G I Q U E & O B S E R V A T I O N S", 
-                 relief="solid", borderwidth=1, padx=5, pady=5, anchor="w", justify="left",
-                 wraplength=cell_width)\
+                 relief="solid", borderwidth=1, padx=5, pady=5, anchor="w", justify="left")\
            .grid(row=7, column=9, columnspan=3, rowspan=2, sticky="nsew")
 
         # Row 9
-        tk.Label(header, text="Echan", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="Echan", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=8, column=2, sticky="nsew")
-        tk.Label(header, text="direct", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="direct", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=8, column=3, sticky="nsew")
-        tk.Label(header, text="Indir", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="Indir", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=8, column=4, sticky="nsew")
-        tk.Label(header, text="25", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="25", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=8, column=7, sticky="nsew")
-        tk.Label(header, text="75", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="75", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=8, column=8, sticky="nsew")
 
         # Row 10: Input row.
@@ -274,8 +238,7 @@ class WordApp:
             tk.Label(header, text="Input", relief="solid", borderwidth=1, padx=5, pady=5,
                      wraplength=cell_width)\
                .grid(row=9, column=col, sticky="nsew")
-        tk.Label(header, text="Input", relief="solid", borderwidth=1, padx=5, pady=5,
-                 wraplength=cell_width)\
+        tk.Label(header, text="Input", relief="solid", borderwidth=1, padx=5, pady=5)\
            .grid(row=9, column=9, columnspan=3, sticky="nsew")
 
         # Configure grid weight=1 now so each column/row expands equally.
@@ -312,11 +275,11 @@ class WordApp:
 
         # text inpit with margins
         text_widget = tk.Text(page_canvas, wrap="word", bg="white", bd=0,
-                              font=('Arial', self.taille), padx=40, pady=50)
+                              font=('Arial', self.taille), padx=20, pady=50)
         text_widget.place(x=0, y=0, width=a4_width, height=a4_height)
 
         # Get width and add header
-        available_width = a4_width - 80 
+        available_width = a4_width - 40 
         header_frame = self.create_header_table(text_widget, available_width)
         text_widget.window_create("1.0", window=header_frame)
         text_widget.insert("end", "\n")  # new line after
@@ -412,46 +375,70 @@ class WordApp:
            Returns the new y_position after drawing the header.
             
             Todo:
-                - Fix merged cells
+                - Fix merged cells - DONE
+                - Verical Text - DONE
+                - Text wraping 
                 - Add styling
                 - Add image
         """
-        from reportlab.platypus import Table, TableStyle, Paragraph, KeepInFrame
+        from reportlab.platypus import Table, TableStyle, Paragraph
         from reportlab.lib import colors
-        from reportlab.lib.styles import ParagraphStyle
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
         from reportlab.lib.enums import TA_CENTER
+
         def rotated_text(text, font_size=7):
             """Create properly rotated text element"""
-            from reportlab.lib.styles import getSampleStyleSheet
             style = getSampleStyleSheet()['Normal']
             style.fontSize = font_size
-            style.leading = font_size
             return RotatedText(text, angle=90)
+        
+        # Define paragraph style for wrapped text
+        styles = getSampleStyleSheet()
+        para_style = ParagraphStyle(
+            'WrappedText',
+            parent=styles['Normal'],
+            fontSize=7,
+            leading=8,
+            alignment=TA_CENTER,
+            wordWrap='LTR'
+        )
+        
 
         # Define table data (each row has 12 columns).
         # Empty strings for cells that are merged
         header_data = [
-            [ "EXPLORATION‐PRODUCTION\nDivision Exploration\nDirection des Operations\nExploration\nDpt: Géologie\nHASSI ‐ MESSAOUD", "", "", "", "", "",
-              "Carotté : 18 m\nRécupéré : 18m soit 100%\nDate d'extraction de la carotte: 27/06/17", "", "", "", "Puits :", "Nord West Trig-2" ],
+            [ 
+                Paragraph("EXPLORATION‐PRODUCTION Division Exploration Direction des Operations Exploration Dpt: Géologie HASSI ‐ MESSAOUD", para_style), 
+                "", "", "", "", "",
+                "Carotté : 18 m \nRécupéré : 18m soit 100% \nDate d'extraction de la carotte: 27/06/17", 
+                "", "", "", "Puits :", "Nord West Trig-2" 
+            ],
             [ "", "", "", "", "", "", "", "", "", "", "Sigle :", "NWT-2" ],
             [ "", "", "", "", "", "", "", "", "", "", "Permis :", "Ohanet II" ],
             [ "", "", "", "", "", "", "", "", "", "", "Bloc :", "234a" ],
-            [ "Echelle : 1/40", "", "", "", "", "",
-              "Carottier: 12440525", "", "", "Type de Boue : OBM", "", "Carrote: 11" ],
+            [ 
+                Paragraph("Echelle : 1/40", para_style), "", "", "", "", "",
+                Paragraph("Carottier: 12440525", para_style), "", "", 
+                Paragraph("Type de Boue : OBM", para_style), "", "Carrote: 11" 
+            ],
             [ "", "", "", "", "", "",
-              "Couronne: 6\" x 2 5/8\"", "", "", "D : 1,08", "Tete:", "2930m" ],
+                Paragraph("Couronne: 6\" x 2 5/8\"", para_style), "", "", 
+                Paragraph("D : 1,08", para_style), "", "Tete: 2930m" 
+            ],
             [ "", "", "", "", "", "",
-              "Type: Ci3126", "", "", "FUN VIS (s/qt) : 46", "Pied:", "3948m" ],
+                Paragraph("Type: Ci3126", para_style), "", "", 
+                Paragraph("FUN VIS (s/qt) : 46", para_style), "", "Pied: 3948m" 
+            ],
             ["Côtes (m)", "Log", "Nº", "INDICES", "", 
-              rotated_text("Fissures"), 
-              rotated_text("Pendage"), 
-              "Calcimètrie", "Age",
-              "DESCRIPTION LITHOLOGIQUE & OBSERVATIONS", "", ""],
+                rotated_text("Fissures"), 
+                rotated_text("Pendage"), 
+                "Calcimètrie", "Age",
+                Paragraph("DESCRIPTION LITHOLOGIQUE & OBSERVATIONS", para_style), "", ""],
             ["", "", 
-              rotated_text("Echant"), 
-              rotated_text("direct"), 
-              rotated_text("Indir."), 
-              "", "", "25", "75", "", "", ""],
+                rotated_text("Echant"), 
+                rotated_text("direct"), 
+                rotated_text("Indir."), 
+                "", "", "25", "75", "", "", ""],
             [ "Input", "Input", "Input", "Input", "Input", "Input", "Input", "Input", "Input", "Input", "", "" ]
         ]
 
@@ -459,8 +446,8 @@ class WordApp:
         total_width = a4_width - 2 * margin
 
         # Define row heights (last 6 columns dboule first 6 width)
-        x = total_width / 18
-        col_widths = [x] * 6 + [2*x] * 6
+        x = total_width / 24
+        col_widths = [2*x] + [x] * 6 + [2*x] * 2 + [x*4] + [3*x] + [x*5]
 
         # # text vertical
         # col_widths[5] = 10  # Fissures column
@@ -470,7 +457,7 @@ class WordApp:
         # col_widths[4] = 10  # Indir. column
 
         # Define row heights (to be adjusted later)
-        row_heights = [30, 20, 20, 20, 30, 20, 20, 40, 40, 20]
+        row_heights = [20, 15, 15, 15, 20, 20, 20, 15, 30, 20]
 
         # Create the Table
         table = Table(header_data, colWidths=col_widths, rowHeights=row_heights)
@@ -525,7 +512,7 @@ class WordApp:
 
         pdf = pdf_canvas.Canvas(file_path, pagesize=A4)
         a4_width, a4_height = A4
-        margin = 40
+        margin = 20
         line_height = 14
         cell_height = 20
         cell_width = 60
