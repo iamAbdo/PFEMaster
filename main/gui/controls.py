@@ -10,7 +10,7 @@ def setup_controls(app):
     control_frame.pack(pady=10, padx=20, side=tk.LEFT)
     
     ttk.Button(control_frame, text="New Page", command=lambda: add_new_page(app), style='Primary.TButton').pack(side=tk.LEFT, padx=5)
-    app.bold_btn = ttk.Button(control_frame, text="Bold", command=lambda: toggle_bold(app), style='Primary.TButton')
+    app.bold_btn = ttk.Button(control_frame, text="Bold", command=lambda: toggle_bold(app), style='Bold.TButton')
     app.bold_btn.pack(side=tk.LEFT, padx=5)
     
     ttk.Button(control_frame, text="Insert Table", command=lambda: insert_table(app), style='Primary.TButton').pack(side=tk.LEFT, padx=5)

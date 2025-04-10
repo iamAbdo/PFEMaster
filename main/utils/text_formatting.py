@@ -1,18 +1,25 @@
+import tkinter as tk
+
 def toggle_bold(app):
-    app.bold_on = not app.bold_on
-    app.bold_btn.state(['pressed' if app.bold_on else '!pressed'])
+    text_widget = app.current_text_widget
+    try:
+        start = text_widget.index("sel.first")
+        end = text_widget.index("sel.last")
+    except tk.TclError:
+        return  # No selection
+    
+    current_tags = text_widget.tag_names("sel.first")
+    if "bold" in current_tags:
+        text_widget.tag_remove("bold", start, end)
+        app.bold_btn.state(['!pressed'])
+    else:
+        text_widget.tag_add("bold", start, end)
+        app.bold_btn.state(['pressed'])
 
 def handle_key_press(app, event):
 
-    if event.keysym == 'b' and (event.state & 0x4):  # Ctrl+B
-        current_tags = app.current_text_widget.tag_names("insert")
-        if "bold" in current_tags:
-            app.current_text_widget.tag_remove("bold", "sel.first", "sel.last")
-        else:
-            app.current_text_widget.tag_add("bold", "sel.first", "sel.last")
-        return "break"
-    if app.bold_on and event.char.isprintable():
-        event.widget.insert("insert", event.char, "bold")
+    if event.keysym == 'b' and (event.state & 0x4):
+        toggle_bold(app)
         return "break"
 
 def set_current_page(app, text_widget):

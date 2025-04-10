@@ -22,11 +22,11 @@ def add_new_page(app):
     container.place(x=0, y=0, width=a4_width, height=a4_height)
 
     # Configure grid columns for container
-    column_pixel_widths = [50]*7 + [148]*3  # Pixel widths for each column
+    app.column_pixel_widths = [50]*7 + [148]*3  # Pixel widths for each column
     text_char_widths = [6]*7 + [18]*3       # Character widths for Text widgets
 
     for i in range(10):
-        container.grid_columnconfigure(i, minsize=column_pixel_widths[i], weight=1)
+        container.grid_columnconfigure(i, minsize=app.column_pixel_widths[i], weight=1)
 
     # Configure grid rows: row 0 for labels, row 1 for text
     container.grid_rowconfigure(0, minsize=20)  # Label row height

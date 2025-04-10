@@ -35,9 +35,17 @@ class WordApp:
         setup_canvas(self)
         add_new_page(self)
 
+        self.configure_tags()
+
     def EditSize(self, taille):
         self.root.taille = taille
         if self.current_page:
             for text_widget in self.current_page:
                 text_widget.configure(font=('Arial', self.root.taille))
+                text_widget.tag_configure("bold", font=('Arial', self.root.taille, 'bold'))
+
+    def configure_tags(self):
+        # Initialize bold tag for all existing text widgets
+        for page in self.pages:
+            for text_widget in page:
                 text_widget.tag_configure("bold", font=('Arial', self.root.taille, 'bold'))
