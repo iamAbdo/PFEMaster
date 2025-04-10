@@ -7,6 +7,7 @@ from functions.new_page import add_new_page
 
 class WordApp:
     def __init__(self, root):
+        
         self.root = root
         self.root.title("Application")
         self.root.state('zoomed')
@@ -18,12 +19,16 @@ class WordApp:
         self.current_font = ("Arial", 12)
         self.root.taille = 12
         self.current_page = None
+
+        self.status_bar = ttk.Label(self.root, text="Total pages: 0", style='Status.TLabel')
+        self.status_bar.grid(row=2, column=0, sticky="ew")
         
         self.header_frame = ttk.Frame(self.root, height=80, style='Header.TFrame')
         self.header_frame.grid(row=0, column=0, sticky="nsew")
         
         self.content_frame = ttk.Frame(self.root)
         self.content_frame.grid(row=1, column=0, sticky="nsew")
+        
         
         setup_styles()
         setup_controls(self)
@@ -33,5 +38,6 @@ class WordApp:
     def EditSize(self, taille):
         self.root.taille = taille
         if self.current_page:
-            self.current_page.configure(font=('Arial', self.root.taille))
-            self.current_page.tag_configure("bold", font=('Arial', self.root.taille, 'bold'))
+            for text_widget in self.current_page:
+                text_widget.configure(font=('Arial', self.root.taille))
+                text_widget.tag_configure("bold", font=('Arial', self.root.taille, 'bold'))
