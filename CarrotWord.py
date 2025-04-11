@@ -482,6 +482,8 @@ class WordApp:
             ('SPAN', (1,7), (1,8)), # LOG
             ('SPAN', (5,7), (5,8)), # Fissures
             ('SPAN', (6,7), (6,8)), # Pondage
+            # inputs
+            ('SPAN', (9,9), (11,9)),
 
             ('GRID', (0,0), (-1,-1), 0.25, colors.black),
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),

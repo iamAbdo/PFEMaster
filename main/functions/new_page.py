@@ -32,21 +32,27 @@ def add_new_page(app):
     container.grid_rowconfigure(0, minsize=20)  # Label row height
     container.grid_rowconfigure(1, weight=1)    # Text row expands
 
-    # Create labels A-J
-    for i in range(10):
-        label = ttk.Label(container, text=chr(65 + i), background='white')
-        label.grid(row=0, column=i, sticky="nsew")
-
-    # Create Text widgets for each column
+    
     text_widgets = []
     for i in range(10):
-        text = tk.Text(container, wrap="word", bg="white", bd=0,
-                       font=('Arial', app.root.taille),
-                       width=text_char_widths[i], height=1)
-        text.grid(row=1, column=i, sticky="nsew")
+        # Column container frame
+        col_frame = ttk.Frame(container, style='Column.TFrame')
+        col_frame.grid(row=0, column=i, rowspan=2, sticky="nsew")
+        
+        # Label
+        label = ttk.Label(col_frame, text=chr(65 + i), style='ColumnHeader.TLabel')
+        label.pack(fill='x')
+        
+        # Text widget with border
+        text = tk.Text(col_frame, wrap="word", bg="white", bd=0,
+                      font=('Arial', app.root.taille),
+                      width=text_char_widths[i], height=1)
+        text.pack(fill='both', expand=True)
         text.bind("<KeyPress>", lambda e: handle_key_press(app, e))
         text.bind("<FocusIn>", lambda e, t=text: set_current_page(app, t))
+        
         text_widgets.append(text)
+
 
     # Add footer with page number
     page_number = len(app.pages) + 1

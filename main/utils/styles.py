@@ -2,6 +2,8 @@ from tkinter import ttk
 
 def setup_styles():
     style = ttk.Style()
+
+    # Header Buttons
     style.configure('Header.TFrame', background='#f0f0f0')
     style.configure('Primary.TButton', font=('Arial', 10, 'bold'), padding=6)
     style.map('Bold.TButton',
@@ -12,3 +14,14 @@ def setup_styles():
     style.map('Primary.TButton',
             background=[('active', 'red'), ('!active', 'red')],
             foreground=[('active', 'black'), ('!active', 'black')])
+    
+    # Paper Styling
+    style.configure('Column.TFrame', background='#e0e0e0')
+    style.configure('ColumnHeader.TLabel', 
+                   background='#f0f0f0', 
+                   relief='ridge', 
+                   anchor='center')
+    style.layout('Column.TFrame', [
+        ('Frame.border', {'sticky': 'nswe'}),  
+        ('Frame.padding', {'sticky': 'nswe'})
+    ])
