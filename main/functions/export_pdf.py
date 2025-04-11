@@ -11,7 +11,7 @@ class PDFExporter:
     def __init__(self, app):
         self.app = app
         self.styles = getSampleStyleSheet()
-        # Use the correct A4 size from ReportLab, which is in points
+        # Use ReportLab's A4 dimensions (points)
         self.a4_width, self.a4_height = A4
 
     def export(self):
@@ -23,19 +23,25 @@ class PDFExporter:
         if not file_path:
             return
 
-        # Create the Canvas with the A4 pagesize from ReportLab
+        # Create the Canvas with A4 pagesize
         pdf = pdf_canvas.Canvas(file_path, pagesize=(self.a4_width, self.a4_height))
-        margin = 40  
+        margin = 40  # Adjust margin if necessary
         line_height = self.app.root.taille + 2
 
+        # Process each page from the application
         for page_num, page in enumerate(self.app.pages):
             pdf.setPageSize((self.a4_width, self.a4_height))
             y_position = self.a4_height - margin
 
-            # Draw header
+            # Draw header and other content
             y_position = self._draw_header(pdf, y_position, margin)
 
+            # Complete the current page
             pdf.showPage()
+
+        # Append an extra, blank A4 page for comparison
+        pdf.setPageSize((self.a4_width, self.a4_height))
+        pdf.showPage()
 
         pdf.save()
 
@@ -99,39 +105,34 @@ class PDFExporter:
         header_row_heights = [20, 15, 15, 15, 20, 20, 20, 15, 30]
 
         sum_header_row_heights = sum(header_row_heights)
-        available_height = self.a4_height - sum_header_row_heights - (margin * 2)
+        available_height = self.a4_height - sum_header_row_heights - margin
         last_row_height = max(available_height - sum_header_row_heights, 0)
         row_heights = header_row_heights + [last_row_height]
-
-        print("A4 Height:", self.a4_height)
-        print("Available height:", available_height)
-        print("margin:", margin)
-        print("Final Row Heights List:", row_heights)
 
         # Create table
         table = Table(header_data, colWidths=col_widths, rowHeights=row_heights)
 
-        # Apply table style 
+        # Apply table style commands
         table.setStyle(TableStyle([
             # Row 0: Merge columns and rows (big blocks)
             ('SPAN', (0,0), (5,3)),  # LOGO
             ('SPAN', (6,0), (9,3)),  # Date and info
-            # Row 4: merge columns (0-5, 6-8, 9-10)
+            # Row 4: Merge columns (0-5, 6-8, 9-10)
             ('SPAN', (0,4), (5,6)),  # Echelle
             ('SPAN', (6,4), (8,4)),  # Carottier
             ('SPAN', (9,4), (10,4)), # Type de Boue
-            # Row 5 & 6: only one block per row (take 3 columns)
+            # Row 5 & 6: Single block per row (spanning three columns)
             ('SPAN', (6,5), (8,5)),  # Couronne
             ('SPAN', (6,6), (8,6)),  # Type
-            # Row 7: merge columns 3-4 and 9-11.
+            # Row 7: Merge columns 3-4 and 9-11.
             ('SPAN', (3,7), (4,7)),  # Indices
             ('SPAN', (9,7), (11,8)), # Description
-            # Row 7 and 8: cells that take two rows: columns 0, 1, 5, 6.
+            # Row 7 and 8: Cells spanning two rows: columns 0, 1, 5, 6.
             ('SPAN', (0,7), (0,8)),  # Côtes
             ('SPAN', (1,7), (1,8)),  # Log
             ('SPAN', (5,7), (5,8)),  # Fissures
             ('SPAN', (6,7), (6,8)),  # Pendage
-            # inputs
+            # Inputs row
             ('SPAN', (9,9), (11,9)),
 
             ('GRID', (0,0), (-1,-1), 0.25, colors.black),
@@ -140,7 +141,7 @@ class PDFExporter:
             ('FONTSIZE', (0,0), (-1,-1), 7),
         ]))
 
-        # Draw table
+        # Draw the table on the PDF
         table.wrap(total_width, 0)
         table.drawOn(pdf, margin, y_position - table._height)
         return y_position - table._height - 10

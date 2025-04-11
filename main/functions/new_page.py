@@ -23,8 +23,14 @@ def add_new_page(app):
         "DESCRIPTION LITHOLOGIQUE & OBSERVATIONS"
     ]
 
-    a4_width = int(21/2.54*96)  # 794 pixels
-    a4_height = int(29.7/2.54*96)  # 1123 pixels
+    # a4_width = int(21/2.54*96)  # 794 pixels
+    # a4_height = int(29.7/2.54*96)  # 1123 pixels
+
+    from reportlab.lib.pagesizes import A4
+    a4_width, a4_height = A4
+    
+    a4_width = int(a4_width)
+    a4_height = int(a4_height)
 
     page_frame = ttk.Frame(app.container)
     page_frame.pack(pady=20, expand=True)
@@ -33,17 +39,19 @@ def add_new_page(app):
                             bg="white", highlightthickness=0)
     page_canvas.pack()
 
-    # Draw page border
-    page_canvas.create_rectangle(2, 2, a4_width+2, a4_height+2, fill='#e0e0e0', outline='')
-    page_canvas.create_rectangle(0, 0, a4_width, a4_height, fill="white")
 
     # Container frame for columns and labels
     container = ttk.Frame(page_canvas)
     container.place(x=0, y=0, width=a4_width, height=a4_height)
 
     # Configure grid columns for container
-    app.column_pixel_widths = [50]*7 + [148]*3  # Pixel widths for each column
-    text_char_widths = [6]*7 + [18]*3       # Character widths for Text widgets
+    app.column_pixel_widths = [50]*7 + [148]*3  
+    text_char_widths = [6]*7 + [18]*3      
+
+    x = (a4_width-2) / 24
+    col_widths = [2*x] + [x]*6 + [2*x]*2 + [x*4 + 3*x + 5*x]
+    text_char_widths = [int(width / 8) for width in col_widths]
+    app.column_pixel_widths = col_widths  
 
     for i in range(10):
         container.grid_columnconfigure(i, minsize=app.column_pixel_widths[i], weight=1)
@@ -59,12 +67,13 @@ def add_new_page(app):
         col_frame = ttk.Frame(container, style='Column.TFrame')
         col_frame.grid(row=0, column=i, rowspan=2, sticky="nsew")
         
+
         # Label
         label = ttk.Label(col_frame, text=app.column_labels[i], style='ColumnHeader.TLabel')
         label.pack(fill='x')
         
         # Text widget with border
-        text = tk.Text(col_frame, wrap="word", bg="white", bd=0,
+        text = tk.Text(col_frame, wrap="word", bg="white", bd=1, relief="solid",
                       font=('Arial', app.root.taille),
                       width=text_char_widths[i], height=1)
         text.pack(fill='both', expand=True)

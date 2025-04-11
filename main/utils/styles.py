@@ -16,12 +16,5 @@ def setup_styles():
             foreground=[('active', 'black'), ('!active', 'black')])
     
     # Paper Styling
-    style.configure('Column.TFrame', background='#e0e0e0')
-    style.configure('ColumnHeader.TLabel', 
-                   background='#f0f0f0', 
-                   relief='ridge', 
-                   anchor='center')
-    style.layout('Column.TFrame', [
-        ('Frame.border', {'sticky': 'nswe'}),  
-        ('Frame.padding', {'sticky': 'nswe'})
-    ])
+    style.configure('Column.TFrame', background='#e0e0e0', borderwidth=1, relief='solid', padding=0)
+    style.configure('ColumnHeader.TLabel', background='#f0f0f0', relief='ridge', anchor='center')
