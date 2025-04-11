@@ -11,8 +11,8 @@ class PDFExporter:
     def __init__(self, app):
         self.app = app
         self.styles = getSampleStyleSheet()
-        self.a4_width = int(21/2.54*96)  # 794 pixels
-        self.a4_height = int(29.7/2.54*96)  # 1123 pixels
+        # Use the correct A4 size from ReportLab, which is in points
+        self.a4_width, self.a4_height = A4
 
     def export(self):
         """Main export method"""
@@ -23,22 +23,20 @@ class PDFExporter:
         if not file_path:
             return
 
+        # Create the Canvas with the A4 pagesize from ReportLab
         pdf = pdf_canvas.Canvas(file_path, pagesize=(self.a4_width, self.a4_height))
-        margin = 40
+        margin = 40  
         line_height = self.app.root.taille + 2
-        
+
         for page_num, page in enumerate(self.app.pages):
             pdf.setPageSize((self.a4_width, self.a4_height))
             y_position = self.a4_height - margin
-            
+
             # Draw header
             y_position = self._draw_header(pdf, y_position, margin)
-            
-            # Draw main content
-            self._draw_columns(pdf, page, y_position, margin, line_height)
-            
+
             pdf.showPage()
-        
+
         pdf.save()
 
     def _draw_header(self, pdf, y_position, margin):
@@ -54,6 +52,8 @@ class PDFExporter:
 
         def rotated_text(text):
             return RotatedText(text, angle=90)
+
+        input_values = [tw.get("1.0", "end").strip() for tw in self.app.current_page]
 
         header_data = [
             [ 
@@ -88,39 +88,49 @@ class PDFExporter:
                 rotated_text("direct"), 
                 rotated_text("Indir."), 
                 "", "", "25", "75", "", "", ""],
-            [ "Input", "Input", "Input", "Input", "Input", "Input", "Input", "Input", "Input", "Input", "", "" ]
+            [Paragraph(val, para_style) if val else "" for val in input_values] + ["", ""]
         ]
-
 
         # Calculate dimensions
         total_width = self.a4_width - 2 * margin
         x = total_width / 24
         col_widths = [2*x] + [x]*6 + [2*x]*2 + [x*4] + [3*x] + [x*5]
-        row_heights = [20, 15, 15, 15, 20, 20, 20, 15, 30, 20]
+
+        header_row_heights = [20, 15, 15, 15, 20, 20, 20, 15, 30]
+
+        sum_header_row_heights = sum(header_row_heights)
+        available_height = self.a4_height - sum_header_row_heights - (margin * 2)
+        last_row_height = max(available_height - sum_header_row_heights, 0)
+        row_heights = header_row_heights + [last_row_height]
+
+        print("A4 Height:", self.a4_height)
+        print("Available height:", available_height)
+        print("margin:", margin)
+        print("Final Row Heights List:", row_heights)
 
         # Create table
         table = Table(header_data, colWidths=col_widths, rowHeights=row_heights)
-        
-        # Apply table style (KEEP YOUR EXISTING TABLE STYLE COMMANDS)
+
+        # Apply table style 
         table.setStyle(TableStyle([
             # Row 0: Merge columns and rows (big blocks)
-            ('SPAN', (0,0), (5,3)), # LOGO
-            ('SPAN', (6,0), (9,3)), # Date et info
+            ('SPAN', (0,0), (5,3)),  # LOGO
+            ('SPAN', (6,0), (9,3)),  # Date and info
             # Row 4: merge columns (0-5, 6-8, 9-10)
-            ('SPAN', (0,4), (5,6)), # Echele
-            ('SPAN', (6,4), (8,4)), # carrotier
-            ('SPAN', (9,4), (10,4)), # Type boue
+            ('SPAN', (0,4), (5,6)),  # Echelle
+            ('SPAN', (6,4), (8,4)),  # Carottier
+            ('SPAN', (9,4), (10,4)), # Type de Boue
             # Row 5 & 6: only one block per row (take 3 columns)
-            ('SPAN', (6,5), (8,5)), # Couronne
-            ('SPAN', (6,6), (8,6)), # Type
+            ('SPAN', (6,5), (8,5)),  # Couronne
+            ('SPAN', (6,6), (8,6)),  # Type
             # Row 7: merge columns 3-4 and 9-11.
-            ('SPAN', (3,7), (4,7)), # indices
+            ('SPAN', (3,7), (4,7)),  # Indices
             ('SPAN', (9,7), (11,8)), # Description
             # Row 7 and 8: cells that take two rows: columns 0, 1, 5, 6.
-            ('SPAN', (0,7), (0,8)), # Cotes
-            ('SPAN', (1,7), (1,8)), # LOG
-            ('SPAN', (5,7), (5,8)), # Fissures
-            ('SPAN', (6,7), (6,8)), # Pondage
+            ('SPAN', (0,7), (0,8)),  # Côtes
+            ('SPAN', (1,7), (1,8)),  # Log
+            ('SPAN', (5,7), (5,8)),  # Fissures
+            ('SPAN', (6,7), (6,8)),  # Pendage
             # inputs
             ('SPAN', (9,9), (11,9)),
 
@@ -135,53 +145,61 @@ class PDFExporter:
         table.drawOn(pdf, margin, y_position - table._height)
         return y_position - table._height - 10
 
-    def _draw_columns(self, pdf, page, start_y, margin, line_height):
-        """Draw the main content columns"""
-        for col_num, text_widget in enumerate(page):
-            content = text_widget.get("1.0", "end-1c")
-            x_pos = sum(self.app.column_pixel_widths[:col_num]) + margin
-            y_pos = start_y
+    #   _   _ _   _ _   _ ____  _____ ____         ____ ___  ____  _____ 
+    #  | | | | \ | | | | / ___|| ____|  _ \       / ___/ _ \|  _ \| ____|
+    #  | | | |  \| | | | \___ \|  _| | | | |     | |  | | | | | | |  _|  
+    #  | |_| | |\  | |_| |___) | |___| |_| |     | |__| |_| | |_| | |___ 
+    #   \___/|_| \_|\___/|____/|_____|____/       \____\___/|____/|_____|
+    #
+                                                               
+
+    # def _draw_columns(self, pdf, page, start_y, margin, line_height):
+    #     """Draw the main content columns"""
+    #     for col_num, text_widget in enumerate(page):
+    #         content = text_widget.get("1.0", "end-1c")
+    #         x_pos = sum(self.app.column_pixel_widths[:col_num]) + margin
+    #         y_pos = start_y
             
-            bold_ranges = self._get_bold_ranges(text_widget)
+    #         bold_ranges = self._get_bold_ranges(text_widget)
             
-            for line in content.split('\n'):
-                if y_pos < margin + 50:
-                    pdf.showPage()
-                    y_pos = self.a4_height - margin
+    #         for line in content.split('\n'):
+    #             if y_pos < margin + 50:
+    #                 pdf.showPage()
+    #                 y_pos = self.a4_height - margin
                 
-                self._draw_line(pdf, line, x_pos, y_pos, bold_ranges)
-                y_pos -= line_height
+    #             self._draw_line(pdf, line, x_pos, y_pos, bold_ranges)
+    #             y_pos -= line_height
 
-    def _get_bold_ranges(self, text_widget):
-        """Detect bold text ranges"""
-        bold_ranges = []
-        start_idx = "1.0"
-        while True:
-            range_start = text_widget.tag_nextrange("bold", start_idx)
-            if not range_start:
-                break
-            bold_ranges.append((
-                text_widget.count("1.0", range_start[0], "chars")[0],
-                text_widget.count("1.0", range_start[1], "chars")[0]
-            ))
-            start_idx = range_start[1]
-        return bold_ranges
+    # def _get_bold_ranges(self, text_widget):
+    #     """Detect bold text ranges"""
+    #     bold_ranges = []
+    #     start_idx = "1.0"
+    #     while True:
+    #         range_start = text_widget.tag_nextrange("bold", start_idx)
+    #         if not range_start:
+    #             break
+    #         bold_ranges.append((
+    #             text_widget.count("1.0", range_start[0], "chars")[0],
+    #             text_widget.count("1.0", range_start[1], "chars")[0]
+    #         ))
+    #         start_idx = range_start[1]
+    #     return bold_ranges
 
-    def _draw_line(self, pdf, text, x, y, bold_ranges):
-        """Draw a single line with bold formatting"""
-        char_pos = 0
-        while char_pos < len(text):
-            in_bold = any(start <= char_pos < end for (start, end) in bold_ranges)
+    # def _draw_line(self, pdf, text, x, y, bold_ranges):
+    #     """Draw a single line with bold formatting"""
+    #     char_pos = 0
+    #     while char_pos < len(text):
+    #         in_bold = any(start <= char_pos < end for (start, end) in bold_ranges)
             
-            if in_bold:
-                pdf.setFont("Helvetica-Bold", self.app.root.taille)
-                bold_end = min([end for (start, end) in bold_ranges if start <= char_pos < end])
-                chunk = text[char_pos:bold_end]
-            else:
-                pdf.setFont("Helvetica", self.app.root.taille)
-                next_bold = min([start for (start, end) in bold_ranges if start > char_pos], default=len(text))
-                chunk = text[char_pos:next_bold]
+    #         if in_bold:
+    #             pdf.setFont("Helvetica-Bold", self.app.root.taille)
+    #             bold_end = min([end for (start, end) in bold_ranges if start <= char_pos < end])
+    #             chunk = text[char_pos:bold_end]
+    #         else:
+    #             pdf.setFont("Helvetica", self.app.root.taille)
+    #             next_bold = min([start for (start, end) in bold_ranges if start > char_pos], default=len(text))
+    #             chunk = text[char_pos:next_bold]
 
-            pdf.drawString(x, y, chunk)
-            char_pos += len(chunk)
-            x += pdf.stringWidth(chunk, "Helvetica", self.app.root.taille)
+    #         pdf.drawString(x, y, chunk)
+    #         char_pos += len(chunk)
+    #         x += pdf.stringWidth(chunk, "Helvetica", self.app.root.taille)

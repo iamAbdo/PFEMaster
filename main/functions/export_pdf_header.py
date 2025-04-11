@@ -1,3 +1,12 @@
+#      _    _     _____ ____ _____ 
+#     / \  | |   | ____|  _ \_   _|
+#    / _ \ | |   |  _| | |_) || |  
+#   / ___ \| |___| |___|  _ < | |  
+#  /_/   \_\_____|_____|_| \_\|_|  
+#
+#   This code is not used (its just a copy)
+#
+
 from reportlab.platypus.flowables import Flowable
 
 class RotatedText(Flowable):

@@ -2,7 +2,27 @@ import tkinter as tk
 from tkinter import ttk
 from utils.text_formatting import handle_key_press, set_current_page
 
+# Not used here yet Wrote it directly in the export_pdf.py file
+def get_column_values(page):
+    """Get first line of text from each column in the page and returns it"""
+    return [text_widget.get("1.0", "1.end") for text_widget in page]
+
 def add_new_page(app):
+
+    # Last line Column configuration at the top
+    app.column_labels = [
+        "Côtes (m)", 
+        "Log", 
+        "Echan", 
+        "direct", 
+        "Indir", 
+        "Fissures", 
+        "Pendage", 
+        "Calcimètrie", 
+        "Age", 
+        "DESCRIPTION LITHOLOGIQUE & OBSERVATIONS"
+    ]
+
     a4_width = int(21/2.54*96)  # 794 pixels
     a4_height = int(29.7/2.54*96)  # 1123 pixels
 
@@ -40,7 +60,7 @@ def add_new_page(app):
         col_frame.grid(row=0, column=i, rowspan=2, sticky="nsew")
         
         # Label
-        label = ttk.Label(col_frame, text=chr(65 + i), style='ColumnHeader.TLabel')
+        label = ttk.Label(col_frame, text=app.column_labels[i], style='ColumnHeader.TLabel')
         label.pack(fill='x')
         
         # Text widget with border
