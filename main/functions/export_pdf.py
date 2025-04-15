@@ -65,24 +65,50 @@ class PDFExporter:
             [ 
                 Paragraph("EXPLORATION‐PRODUCTION Division Exploration Direction des Operations Exploration Dpt: Géologie HASSI ‐ MESSAOUD", para_style), 
                 "", "", "", "", "",
-                "Carotté : 18 m \nRécupéré : 18m soit 100% \nDate d'extraction de la carotte: 27/06/17", 
-                "", "", "", "Puits :", "Nord West Trig-2" 
+                self.app.project_info["carotte_summary"], 
+                "", "", "", 
+                "Puits :", 
+                self.app.project_info["puits"]
             ],
-            [ "", "", "", "", "", "", "", "", "", "", "Sigle :", "NWT-2" ],
-            [ "", "", "", "", "", "", "", "", "", "", "Permis :", "Ohanet II" ],
-            [ "", "", "", "", "", "", "", "", "", "", "Bloc :", "234a" ],
             [ 
-                Paragraph("Echelle : 1/40", para_style), "", "", "", "", "",
-                Paragraph("Carottier: 12440525", para_style), "", "", 
-                Paragraph("Type de Boue : OBM", para_style), "", "Carrote: 11" 
+                "", "", "", "", "", "", "", "", "", "", 
+                "Sigle :", 
+                self.app.project_info["sigle"]
             ],
-            [ "", "", "", "", "", "",
-                Paragraph("Couronne: 6\" x 2 5/8\"", para_style), "", "", 
-                Paragraph("D : 1,08", para_style), "", "Tete: 2930m" 
+            [ 
+                "", "", "", "", "", "", "", "", "", "", 
+                "Permis :", 
+                self.app.project_info["permis"]
             ],
-            [ "", "", "", "", "", "",
-                Paragraph("Type: Ci3126", para_style), "", "", 
-                Paragraph("FUN VIS (s/qt) : 46", para_style), "", "Pied: 3948m" 
+            [ 
+                "", "", "", "", "", "", "", "", "", "", 
+                "Bloc :", 
+                self.app.project_info["bloc"]
+            ],
+            [ 
+                Paragraph(f"Echelle : {self.app.project_info['echelle']}", para_style), 
+                "", "", "", "", "",
+                Paragraph(f"Carottier: {self.app.project_info['carottier']}", para_style), 
+                "", "", 
+                Paragraph(f"Type de Boue : {self.app.project_info['mud_type']}", para_style), 
+                "", 
+                f"Carrote: {self.app.project_info['carotte']}"
+            ],
+            [ 
+                "", "", "", "", "", "",
+                Paragraph(f"Couronne: {self.app.project_info['couronne']}", para_style), 
+                "", "", 
+                Paragraph(f"D : {self.app.project_info['d_value']}", para_style), 
+                "", 
+                f"Tete: {self.app.project_info['tete']}"
+            ],
+            [ 
+                "", "", "", "", "", "",
+                Paragraph(f"Type: {self.app.project_info['core_type']}", para_style), 
+                "", "", 
+                Paragraph(f"FUN VIS (s/qt) : {self.app.project_info['fun_vis']}", para_style), 
+                "", 
+                f"Pied: {self.app.project_info['pied']}"
             ],
             ["Côtes (m)", "Log", "Nº", "INDICES", "", 
                 rotated_text("Fissures"), 
@@ -105,8 +131,8 @@ class PDFExporter:
         header_row_heights = [20, 15, 15, 15, 20, 20, 20, 15, 30]
 
         sum_header_row_heights = sum(header_row_heights)
-        available_height = self.a4_height - sum_header_row_heights - margin
-        last_row_height = max(available_height - sum_header_row_heights, 0)
+        available_height = self.a4_height - margin*2 - sum_header_row_heights
+        last_row_height = max(available_height, 0)
         row_heights = header_row_heights + [last_row_height]
 
         # Create table
