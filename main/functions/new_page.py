@@ -67,20 +67,78 @@ def add_new_page(app):
         col_frame = ttk.Frame(container, style='Column.TFrame')
         col_frame.grid(row=0, column=i, rowspan=2, sticky="nsew")
         
-
         # Label
         label = ttk.Label(col_frame, text=app.column_labels[i], style='ColumnHeader.TLabel')
         label.pack(fill='x')
         
-        # Text widget with border
-        text = tk.Text(col_frame, wrap="word", bg="white", bd=1, relief="solid",
-                      font=('Arial', app.root.taille),
-                      width=text_char_widths[i], height=1)
-        text.pack(fill='both', expand=True)
-        text.bind("<KeyPress>", lambda e: handle_key_press(app, e))
-        text.bind("<FocusIn>", lambda e, t=text: set_current_page(app, t))
-        
-        text_widgets.append(text)
+        if i == 0:  # Changed from i == 0 to i == 9 for rightmost column
+            # Ruler container with border
+            ruler_frame = tk.Frame(col_frame, bd=1, relief="solid", bg="white")
+            ruler_frame.pack(fill='both', expand=True, padx=0, pady=0)
+            
+            # Create canvas for ruler drawing
+            ruler_canvas = tk.Canvas(ruler_frame, bg="white", highlightthickness=0)
+            ruler_canvas.pack(fill='both', expand=True, padx=0, pady=0)
+            
+            def draw_ruler(event):
+                ruler_canvas.delete("all")
+                canvas_width = event.width
+                canvas_height = event.height
+                
+                # Calculate division height
+                division_height = canvas_height / 9
+                
+                # Draw ruler elements
+                for j in range(9):
+                    y_pos = j * division_height
+                    
+                    # Main bold line (right side)
+                    ruler_canvas.create_line(canvas_width-15, y_pos, canvas_width, y_pos, width=2)
+                    
+                    # Subdivision lines (4 between main numbers)
+                    for k in range(1, 5):
+                        sub_y = y_pos + (k * division_height/5)
+                        ruler_canvas.create_line(canvas_width-8, sub_y, canvas_width, sub_y)
+                    
+                    # Number labels (left-aligned to ruler lines)
+                    ruler_canvas.create_text(
+                        canvas_width-20,  # Position text to left of lines
+                        y_pos,
+                        text=str(3000 + j),
+                        anchor="ne",  # Northeast anchor
+                        font=('Arial', max(6, app.root.taille - 4)),  # Smaller font size
+                        fill="black"
+                    )
+                
+                ruler_canvas.create_text(
+                    canvas_width-20, 
+                    9*division_height - 12,
+                    text=str(3000 + 9),
+                    anchor="ne",  
+                    font=('Arial', max(6, app.root.taille - 4)), 
+                    fill="black"
+                )
+                # Final bold line at bottom
+                ruler_canvas.create_line(canvas_width-15, canvas_height, canvas_width, canvas_height, width=2)
+            
+            ruler_canvas.bind("<Configure>", draw_ruler)
+            
+        else:
+            # Text widget with border
+            text = tk.Text(
+                col_frame,
+                wrap="word",
+                bg="white",
+                bd=1,
+                relief="solid",
+                font=('Arial', app.root.taille),
+                width=text_char_widths[i],
+                height=1
+            )
+            text.pack(fill='both', expand=True)
+            text.bind("<KeyPress>", lambda e: handle_key_press(app, e))
+            text.bind("<FocusIn>", lambda e, t=text: set_current_page(app, t))
+            text_widgets.append(text)
 
 
     # Add footer with page number

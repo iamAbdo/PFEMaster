@@ -137,7 +137,7 @@ class PDFExporter:
                 rotated_text("direct"), 
                 rotated_text("Indir."), 
                 "", "", "25", "75", "", "", ""],
-            [Paragraph(val, get_paragraph_style(self.app.current_page[index])) if val else "" for index, val in enumerate(input_values)] + ["", ""]
+            [""] + [Paragraph(val, get_paragraph_style(self.app.current_page[index])) if val else "" for index, val in enumerate(input_values)] + ["", ""]
         ]   
 
 
