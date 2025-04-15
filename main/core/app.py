@@ -6,7 +6,7 @@ from utils.styles import setup_styles
 from functions.new_page import add_new_page
 
 class WordApp:
-    def __init__(self, root):
+    def __init__(self, root, project_info):
         
         self.root = root
         self.root.title("Application")
@@ -28,6 +28,10 @@ class WordApp:
         
         self.content_frame = ttk.Frame(self.root)
         self.content_frame.grid(row=1, column=0, sticky="nsew")
+
+
+        # Project Information
+        self.project_info = project_info
         
         
         setup_styles()
