@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
 from functions.new_page import add_new_page
-from functions.insert_table import insert_table
 from utils.text_formatting import toggle_bold
 from functions.export_pdf import PDFExporter
 
@@ -13,7 +12,7 @@ def setup_controls(app):
     app.bold_btn = ttk.Button(control_frame, text="Bold", command=lambda: toggle_bold(app), style='Bold.TButton')
     app.bold_btn.pack(side=tk.LEFT, padx=5)
     
-    ttk.Button(control_frame, text="Insert Table", command=lambda: insert_table(app), style='Primary.TButton').pack(side=tk.LEFT, padx=5)
+
     ttk.Button(control_frame, text="Export PDF", 
               command=lambda: PDFExporter(app).export(), 
               style='Primary.TButton').pack(side=tk.LEFT, padx=5)

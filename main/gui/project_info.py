@@ -1,4 +1,3 @@
-# project_info.py
 import tkinter as tk
 from tkinter import ttk
 
@@ -40,24 +39,46 @@ class ProjectInfoWindow:
 
         self.create_form()
 
-        # Buttons
-        self.confirm_btn = ttk.Button(
+        # Confirm Button (Green)
+        self.confirm_btn = tk.Button(
             self.button_frame,
             text="Confirm",
-            command=self.on_confirm
+            command=self.on_confirm,
+            bg="#4CAF50",
+            fg="white",
+            borderwidth=0,
+            padx=10,
+            pady=5
         )
         self.confirm_btn.pack(side=tk.RIGHT, padx=10)
+        self.confirm_btn.bind("<Enter>", lambda e: self.confirm_btn.config(bg="#45a049"))
+        self.confirm_btn.bind("<Leave>", lambda e: self.confirm_btn.config(bg="#4CAF50"))
 
-        self.cancel_btn = ttk.Button(
+        # Cancel Button (Red)
+        self.cancel_btn = tk.Button(
             self.button_frame,
             text="Cancel",
-            command=self.on_cancel
+            command=self.on_cancel,
+            bg="#f44336",
+            fg="white",
+            borderwidth=0,
+            padx=10,
+            pady=5
         )
         self.cancel_btn.pack(side=tk.RIGHT)
+        self.cancel_btn.bind("<Enter>", lambda e: self.cancel_btn.config(bg="#d32f2f"))
+        self.cancel_btn.bind("<Leave>", lambda e: self.cancel_btn.config(bg="#f44336"))
 
-        # Let the geometry update to fit all content
+        # MAKE WINDOW ON CENTER OF SCREEN
         self.master.update_idletasks()
-        self.master.geometry(f"{self.master.winfo_reqwidth()}x{self.master.winfo_reqheight()}")
+        width = self.master.winfo_reqwidth()
+        height = self.master.winfo_reqheight()
+
+        screen_width = self.master.winfo_screenwidth()
+        screen_height = self.master.winfo_screenheight()
+        x = int((screen_width / 2) - (width / 2))
+        y = int((screen_height / 2) - (height / 2))
+        self.master.geometry(f"{width}x{height}+{x}+{y}")
 
     def create_form(self):
         """Create form fields for project information"""

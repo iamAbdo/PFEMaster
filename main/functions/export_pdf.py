@@ -6,6 +6,8 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.enums import TA_CENTER
 from tkinter import filedialog
 from utils.pdf_helpers import RotatedText
+import tkinter as tk
+
 
 class PDFExporter:
     def __init__(self, app):
@@ -60,6 +62,21 @@ class PDFExporter:
             return RotatedText(text, angle=90)
 
         input_values = [tw.get("1.0", "end").strip() for tw in self.app.current_page]
+
+        def get_paragraph_style(widget):
+            """Helper function to get the correct style for the text"""
+            try:
+                start = widget.index("sel.first")
+                end = widget.index("sel.last")
+                current_tags = widget.tag_names(start)
+            except tk.TclError:
+                # If no text is selected, default to normal style
+                return ParagraphStyle(name="Normal", fontName="Helvetica", fontSize=7)
+            
+            if "bold" in current_tags:
+                return ParagraphStyle(name="Bold", fontName="Helvetica-Bold", fontSize=7)
+            else:
+                return ParagraphStyle(name="Normal", fontName="Helvetica", fontSize=7)
 
         header_data = [
             [ 
@@ -120,9 +137,11 @@ class PDFExporter:
                 rotated_text("direct"), 
                 rotated_text("Indir."), 
                 "", "", "25", "75", "", "", ""],
-            [Paragraph(val, para_style) if val else "" for val in input_values] + ["", ""]
-        ]
+            [Paragraph(val, get_paragraph_style(self.app.current_page[index])) if val else "" for index, val in enumerate(input_values)] + ["", ""]
+        ]   
 
+
+        # get_paragraph_style(self.app.current_page[0])
         # Calculate dimensions
         total_width = self.a4_width - 2 * margin
         x = total_width / 24

@@ -8,6 +8,9 @@ def toggle_bold(app):
     except tk.TclError:
         return  # No selection
     
+    # Ensure the 'bold' tag is created with the correct font weight
+    text_widget.tag_configure("bold", font=("Arial", 10, "bold"))
+
     current_tags = text_widget.tag_names("sel.first")
     if "bold" in current_tags:
         text_widget.tag_remove("bold", start, end)
