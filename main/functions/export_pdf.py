@@ -78,6 +78,7 @@ class PDFExporter:
             else:
                 return ParagraphStyle(name="Normal", fontName="Helvetica", fontSize=7)
 
+
         header_data = [
             [ 
                 Paragraph("EXPLORATION‐PRODUCTION Division Exploration Direction des Operations Exploration Dpt: Géologie HASSI ‐ MESSAOUD", para_style), 
@@ -189,7 +190,46 @@ class PDFExporter:
         # Draw the table on the PDF
         table.wrap(total_width, 0)
         table.drawOn(pdf, margin, y_position - table._height)
+
+        self._draw_pdf_ruler(
+            pdf,
+            x_start=margin , 
+            y_start= sum_header_row_heights + margin, 
+            width=col_widths[0],  
+            height=last_row_height
+        )
+
+
         return y_position - table._height - 10
+    
+    def _draw_pdf_ruler(self, pdf, x_start, y_start, width, height):
+        """Draw ruler markings directly on the PDF canvas"""
+        division_height = height / 10
+        line_end = x_start + width
+        
+        for j in range(10):
+            y_pos = y_start + j * division_height
+            
+            # Main bold line
+            pdf.setLineWidth(1.5)
+            pdf.line(line_end - 15, y_pos, line_end, y_pos)
+            
+            # Subdivisions
+            pdf.setLineWidth(0.5)
+            for k in range(1, 5):
+                sub_y = y_pos + (k * division_height/5)
+                pdf.line(line_end - 8, sub_y, line_end, sub_y)
+            
+            # Number labels
+            pdf.setFont("Helvetica", 6)
+            pdf.drawRightString(line_end - 18, y_pos - 2, str(3000 + j))
+
+            print("number " + str(3000 + j) + " at: " + str(y_pos))
+
+        
+        # Final bottom line
+        pdf.setLineWidth(1.5)
+        pdf.line(line_end - 15, y_start + height, line_end, y_start + height)
 
     #   _   _ _   _ _   _ ____  _____ ____         ____ ___  ____  _____ 
     #  | | | | \ | | | | / ___|| ____|  _ \       / ___/ _ \|  _ \| ____|

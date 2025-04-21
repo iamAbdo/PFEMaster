@@ -1,1 +1,3 @@
 reportlab
+pynacl
+argon2-cffi
