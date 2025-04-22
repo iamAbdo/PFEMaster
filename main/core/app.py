@@ -145,55 +145,92 @@ class WordApp:
 
     def open_box_configurator(self, box_frame):
         """
-        Pops up a small dialog to choose bg color and texture.
+        Pops up a small dialog to choose bg color, texture, or remove the box.
         """
-
-        print("open_box_configurator")
-        # 1) build the pop‑up
         win = tk.Toplevel(self.root)
         win.title("Configure Box")
         win.transient(self.root)
         win.grab_set()
 
-        # 2) Color chooser button
+        # — Color chooser —
         def pick_color():
             c = colorchooser.askcolor(initialcolor=box_frame.bg_color, parent=win)
             if c and c[1]:
                 box_frame.bg_color = c[1]
-                inner = box_frame.winfo_children()[0]  # your inner Frame
+                inner = box_frame.winfo_children()[0]
                 inner.config(bg=box_frame.bg_color)
 
-        ttk.Button(win, text="Choose Color…", command=pick_color).pack(padx=10, pady=(10,5))
+        ttk.Button(win, text="Choose Color…", command=pick_color)\
+            .pack(fill="x", padx=10, pady=(10,5))
 
-        # 3) Texture dropdown
+        # — Texture dropdown —
         textures = ["++++", "-----", "//////", "-+-+-+-+", "--.--."]
         tex_var = tk.StringVar(value=box_frame.texture)
-        ttk.Label(win, text="Texture:").pack(padx=10, pady=(5,0), anchor="w")
-        combo = ttk.Combobox(win, textvariable=tex_var, values=textures, state="readonly")
-        combo.pack(padx=10, pady=(0,10), fill="x")
+        ttk.Label(win, text="Texture:").pack(anchor="w", padx=10)
+        combo = ttk.Combobox(
+            win, textvariable=tex_var,
+            values=textures, state="readonly"
+        )
+        combo.pack(fill="x", padx=10, pady=(0,10))
 
-        # 4) Apply & Close
+        # — Apply (OK) —
         def apply_and_close():
             box_frame.texture = tex_var.get()
-            # overlay the texture: we’ll drop a Label on top
             inner = box_frame.winfo_children()[0]
-            # remove old texture widget if any
+
+            # remove old texture overlay
             for w in inner.place_slaves():
                 if getattr(w, "_is_texture", False):
                     w.destroy()
+
             if box_frame.texture:
-                # repeated across the width/height
-                txt = ("\n".join([box_frame.texture])*10)
-                tex_label = tk.Label(inner, text=txt, bg=box_frame.bg_color, 
-                                     justify="left", anchor="nw", font=("Courier", 8))
+                # tile vertically to fill the height
+                # approximate line count from box height / font height
+                font = ("Courier", 8)
+                # force an update to get actual height
+                inner.update_idletasks()
+                h = inner.winfo_height()
+                # rough line‐height in pixels
+                line_h = inner.tk.call("font", "metrics", font, "-linespace") or 12
+                count = max(int(h / line_h) + 1, 5)
+
+                txt = "\n".join([box_frame.texture] * count)
+                tex_label = tk.Label(
+                    inner, text=txt,
+                    bg=box_frame.bg_color,
+                    font=font,
+                    bd=0, padx=0, pady=0,
+                    justify="left", anchor="nw"
+                )
                 tex_label._is_texture = True
                 tex_label.place(relwidth=1, relheight=1)
+
             win.destroy()
 
-        ttk.Button(win, text="OK", command=apply_and_close).pack(pady=(0,10))
+        ok_btn = ttk.Button(win, text="OK", command=apply_and_close)
+        ok_btn.pack(side="right", padx=(0,10), pady=(0,10))
 
-        # center the pop‑up
+        # — Remove button —
+        def remove_and_close():
+            # find & remove from the last page’s list
+            page = self.log_boxes[-1]
+            for entry in page["boxes"]:
+                if entry["frame"] is box_frame:
+                    entry["frame"].destroy()
+                    page["boxes"].remove(entry)
+                    # if it was the expandable, clear it
+                    if page["current_expandable"] is entry:
+                        page["current_expandable"] = None
+                    break
+            win.destroy()
+
+        remove_btn = ttk.Button(win, text="Remove Box", command=remove_and_close)
+        remove_btn.pack(side="left", padx=(10,0), pady=(0,10))
+
+        # Center the popup
         win.update_idletasks()
         x = self.root.winfo_rootx() + 50
         y = self.root.winfo_rooty() + 50
         win.geometry(f"+{x}+{y}")
+
+
