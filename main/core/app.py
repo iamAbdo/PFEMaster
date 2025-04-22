@@ -1,12 +1,21 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, colorchooser
 from gui.controls import setup_controls
 from gui.canvas import setup_canvas
 from utils.styles import setup_styles
 from functions.new_page import add_new_page
 
+
+from reportlab.lib.pagesizes import A4
+    
+
 class WordApp:
     def __init__(self, root, project_info):
+
+        a4_width, a4_height = A4
+    
+        self.a4_width = int(a4_width)
+        self.a4_height = int(a4_height)
         
         self.root = root
         self.root.title("Application")
@@ -32,6 +41,10 @@ class WordApp:
 
         # Project Information
         self.project_info = project_info
+
+        # Tracking boxes
+        self.log_boxes = []  # To track boxes in column 1
+        self.current_expandable = None
         
         
         setup_styles()
@@ -53,3 +66,134 @@ class WordApp:
         for page in self.pages:
             for text_widget in page:
                 text_widget.tag_configure("bold", font=('Arial', self.root.taille, 'bold'))
+
+
+    # LES MATERIALS
+    def create_log_box(self, parent, is_expandable=True):
+        """
+        Returns a dict for one box: { frame, handle, expandable, bg_color, texture }
+        """
+        box_frame = ttk.Frame(parent, style='LogBox.TFrame')
+        # default state
+        box_frame.bg_color = "white"
+        box_frame.texture = ""  
+
+        # pack/draw as before…
+        inner = tk.Frame(box_frame, bg=box_frame.bg_color, bd=1, relief="solid")
+        inner.pack(fill="both", expand=True)
+
+        # **bind click** on the outer frame
+        print("bind click")
+        box_frame.bind("<Button-1>", lambda e, b=box_frame: self.open_box_configurator(b))
+
+        for w in (box_frame, inner):
+            print(f"binding click on {w}")        # diagnostics
+            w.bind("<Button-1>", lambda e, b=box_frame: self.open_box_configurator(b))
+
+        handle = None
+        if is_expandable:
+            handle = ttk.Frame(box_frame, height=5, cursor="sb_v_double_arrow")
+            handle.pack(fill="x", side="bottom")
+
+            # store local refs for closures
+            min_h = self._log_min_height
+            max_h = self._log_max_height
+
+            def start_resize(e):
+                handle._start_y = e.y_root
+                handle._start_h = box_frame.winfo_height()
+
+            def do_resize(e):
+                dy = e.y_root - handle._start_y
+                new_h = handle._start_h + dy
+                new_h = max(min_h, min(max_h, new_h))
+                box_frame.place_configure(height=new_h)
+
+            handle.bind("<ButtonPress-1>", start_resize)
+            handle.bind("<B1-Motion>", do_resize)
+        return {"frame": box_frame, "handle": handle, "expandable": bool(handle)}
+
+    def add_log_box(self):
+        """
+        Called when the “+ Add Log” button is clicked.
+        Finds the current page’s log_container, freezes the previous expandable,
+        then appends & places a fresh one.
+        """
+        if not self.log_boxes:
+            return
+
+        page_data = self.log_boxes[-1]
+        full_h = int(self.a4_height) - 20
+
+        # freeze old expandable
+        cur = page_data["current_expandable"]
+        if cur and cur["handle"]:
+            cur["handle"].destroy()
+            cur["expandable"] = False
+            cur["frame"].place_configure(
+                height=cur["frame"].winfo_height()
+            )
+
+        # create & place new
+        new_box = self.create_log_box(page_data["container"])
+        y_offset = sum(b["frame"].winfo_height() for b in page_data["boxes"])
+        init_h = full_h / 45
+        new_box["frame"].place(relwidth=1, y=y_offset, height=init_h)
+
+        page_data["boxes"].append(new_box)
+        page_data["current_expandable"] = new_box
+
+    def open_box_configurator(self, box_frame):
+        """
+        Pops up a small dialog to choose bg color and texture.
+        """
+
+        print("open_box_configurator")
+        # 1) build the pop‑up
+        win = tk.Toplevel(self.root)
+        win.title("Configure Box")
+        win.transient(self.root)
+        win.grab_set()
+
+        # 2) Color chooser button
+        def pick_color():
+            c = colorchooser.askcolor(initialcolor=box_frame.bg_color, parent=win)
+            if c and c[1]:
+                box_frame.bg_color = c[1]
+                inner = box_frame.winfo_children()[0]  # your inner Frame
+                inner.config(bg=box_frame.bg_color)
+
+        ttk.Button(win, text="Choose Color…", command=pick_color).pack(padx=10, pady=(10,5))
+
+        # 3) Texture dropdown
+        textures = ["++++", "-----", "//////", "-+-+-+-+", "--.--."]
+        tex_var = tk.StringVar(value=box_frame.texture)
+        ttk.Label(win, text="Texture:").pack(padx=10, pady=(5,0), anchor="w")
+        combo = ttk.Combobox(win, textvariable=tex_var, values=textures, state="readonly")
+        combo.pack(padx=10, pady=(0,10), fill="x")
+
+        # 4) Apply & Close
+        def apply_and_close():
+            box_frame.texture = tex_var.get()
+            # overlay the texture: we’ll drop a Label on top
+            inner = box_frame.winfo_children()[0]
+            # remove old texture widget if any
+            for w in inner.place_slaves():
+                if getattr(w, "_is_texture", False):
+                    w.destroy()
+            if box_frame.texture:
+                # repeated across the width/height
+                txt = ("\n".join([box_frame.texture])*10)
+                tex_label = tk.Label(inner, text=txt, bg=box_frame.bg_color, 
+                                     justify="left", anchor="nw", font=("Courier", 8))
+                tex_label._is_texture = True
+                tex_label.place(relwidth=1, relheight=1)
+            win.destroy()
+
+        ttk.Button(win, text="OK", command=apply_and_close).pack(pady=(0,10))
+
+        # center the pop‑up
+        win.update_idletasks()
+        x = self.root.winfo_rootx() + 50
+        y = self.root.winfo_rooty() + 50
+        win.geometry(f"+{x}+{y}")

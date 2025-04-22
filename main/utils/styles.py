@@ -15,6 +15,15 @@ def setup_styles():
             background=[('active', 'red'), ('!active', 'red')],
             foreground=[('active', 'black'), ('!active', 'black')])
     
+    # Add button
+    style.configure('Success.TButton', 
+                    foreground='white', 
+                    background='#28a745', 
+                    bordercolor='#28a745', 
+                    focuscolor=style.configure('.')['background'])
+    
+    style.configure("LogBox.TFrame", padding=0)
+    
     # Paper Styling
     style.configure('Column.TFrame', background='#e0e0e0', borderwidth=1, relief='solid', padding=0)
     style.configure('ColumnHeader.TLabel', background='#f0f0f0', relief='ridge', anchor='center')

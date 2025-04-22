@@ -71,7 +71,7 @@ def add_new_page(app):
         label = ttk.Label(col_frame, text=app.column_labels[i], style='ColumnHeader.TLabel')
         label.pack(fill='x')
         
-        if i == 0:  # Changed from i == 0 to i == 9 for rightmost column
+        if i == 0: 
             # Ruler container with border
             ruler_frame = tk.Frame(col_frame, bd=1, relief="solid", bg="white")
             ruler_frame.pack(fill='both', expand=True, padx=0, pady=0)
@@ -122,31 +122,122 @@ def add_new_page(app):
                 ruler_canvas.create_line(canvas_width-15, canvas_height, canvas_width, canvas_height, width=2)
             
             ruler_canvas.bind("<Configure>", draw_ruler)
-        
+
         elif i == 1:
-
-            # Container for all log boxes
-            log_container = ttk.Frame(col_frame)
-            log_container.pack(fill='both', expand=True)
+            # Create a frame for the lines with a border
+            lines_frame = tk.Frame(col_frame, bd=1, relief="solid", bg="white")
+            lines_frame.pack(fill='both', expand=True, padx=0, pady=0)
             
-            # store reference in the app
-            app.log_boxes.append({
-                'container': log_container,
-                'boxes': [],
-                'current_expandable': None
-            })
-
-            fullheight = a4_height - 20
-            app._log_min_height = fullheight / 45
-            app._log_max_height = fullheight / 2
-
-
-            # initial box
-            first_box = app.create_log_box(log_container)
-            first_box['frame'].place(relwidth=1, height=app._log_min_height)
-            app.log_boxes[-1]['boxes'].append(first_box)
-            app.log_boxes[-1]['current_expandable'] = first_box
+            # Create canvas to draw the lines and handle clicks
+            lines_canvas = tk.Canvas(lines_frame, bg="white", highlightthickness=0)
+            lines_canvas.pack(fill='both', expand=True)
             
+            # Initialize box states storage
+            if not hasattr(lines_canvas, 'box_states'):
+                lines_canvas.box_states = [{
+                    'color': 'white', 
+                    'texture': None
+                } for _ in range(45)]
+
+            def show_selection_dialog(box_index):
+                popup = tk.Toplevel(app.root)
+                popup.title("Box Formatting")
+                popup.geometry("300x200")
+                
+                # Color selection
+                color_var = tk.StringVar(value=lines_canvas.box_states[box_index]['color'])
+                ttk.Label(popup, text="Choose Color:").pack(pady=5)
+                
+                color_frame = ttk.Frame(popup)
+                color_frame.pack()
+                colors = [('Red', 'red'), ('Green', 'green'), ('Blue', 'blue'), 
+                        ('Yellow', 'yellow'), ('White', 'white')]
+                for text, color in colors:
+                    btn = ttk.Radiobutton(
+                        color_frame, text=text, value=color, variable=color_var,
+                        command=lambda c=color: color_var.set(c)
+                    )
+                    btn.pack(side='left', padx=2)
+
+                # Texture selection
+                texture_var = tk.StringVar(value=lines_canvas.box_states[box_index]['texture'] or 'none')
+                ttk.Label(popup, text="Choose Texture:").pack(pady=5)
+                
+                texture_frame = ttk.Frame(popup)
+                texture_frame.pack()
+                textures = [
+                    ('None', 'none'), 
+                    ('Dashes', 'dashes'), 
+                    ('Pluses', 'pluses'), 
+                    ('Slashes', 'slashes')
+                ]
+                for text, texture in textures:
+                    btn = ttk.Radiobutton(
+                        texture_frame, text=text, value=texture, variable=texture_var,
+                        command=lambda t=texture: texture_var.set(t)
+                    )
+                    btn.pack(side='left', padx=2)
+
+                def apply_changes():
+                    # Update box state
+                    lines_canvas.box_states[box_index]['color'] = color_var.get()
+                    lines_canvas.box_states[box_index]['texture'] = (
+                        texture_var.get() if texture_var.get() != 'none' else None
+                    )
+                    # Redraw canvas
+                    width = lines_canvas.winfo_width()
+                    height = lines_canvas.winfo_height()
+                    fake_event = type('Event', (), {'width': width, 'height': height})()
+                    draw_lines(fake_event)
+                    popup.destroy()
+
+                ttk.Button(popup, text="Apply", command=apply_changes).pack(pady=10)
+
+            def draw_lines(event):
+                lines_canvas.delete("all")
+                canvas_width = event.width
+                canvas_height = event.height
+                division_height = canvas_height / 45
+
+                for j in range(45):
+                    y_top = j * division_height
+                    y_bottom = (j + 1) * division_height
+                    state = lines_canvas.box_states[j]
+
+                    # Draw background
+                    box_id = lines_canvas.create_rectangle(
+                        0, y_top, canvas_width, y_bottom,
+                        fill=state['color'], outline='',
+                        tags=(f"box_{j}",)
+                    )
+                    lines_canvas.tag_bind(box_id, '<Button-1>', 
+                        lambda e, idx=j: show_selection_dialog(idx))
+
+                    # Draw texture
+                    if state['texture'] == 'dashes':
+                        step = division_height / 5
+                        for y in range(int(y_top), int(y_bottom), int(step)):
+                            lines_canvas.create_line(0, y, canvas_width, y, dash=(2, 2))
+                    elif state['texture'] == 'pluses':
+                        x_step = canvas_width // 4
+                        y_step = division_height // 4
+                        for x in range(10, int(canvas_width), x_step):
+                            for y in range(int(y_top)+5, int(y_bottom), y_step):
+                                lines_canvas.create_line(x-3, y, x+3, y, width=1)
+                                lines_canvas.create_line(x, y-3, x, y+3, width=1)
+                    elif state['texture'] == 'slashes':
+                        for offset in range(-10, 10, 3):
+                            lines_canvas.create_line(
+                                offset, y_top, 
+                                canvas_width+offset, y_bottom,
+                                fill='black'
+                            )
+
+                    # Draw separation line
+                    lines_canvas.create_line(0, y_bottom, canvas_width, y_bottom)
+
+            lines_canvas.bind("<Configure>", draw_lines)
+        
         else:
             # Text widget with border
             text = tk.Text(
@@ -178,4 +269,5 @@ def add_new_page(app):
 
     # Update status bar
     app.status_bar.config(text=f"Total pages: {len(app.pages)}")
+
 

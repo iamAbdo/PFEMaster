@@ -17,6 +17,17 @@ def setup_controls(app):
               command=lambda: PDFExporter(app).export(), 
               style='Primary.TButton').pack(side=tk.LEFT, padx=5)
     
+    # in controls.py
+    ttk.Button(
+        control_frame, 
+        text="+ Add Log", 
+        command=lambda: app.add_log_box(),
+        style='Success.TButton'
+    ).pack(side=tk.LEFT, padx=5)
+
+
     spin_var = tk.IntVar(value=12)
     ttk.Spinbox(control_frame, from_=1, to=64, textvariable=spin_var).pack(side=tk.LEFT)
     spin_var.trace_add('write', lambda *args: app.EditSize(spin_var.get()))
+
+
