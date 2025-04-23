@@ -274,8 +274,9 @@ class PDFExporter:
 
         # compute total GUI height
         gui_heights = [entry["frame"].winfo_height() for entry in page_data["boxes"]]
-        gui_total = sum(h for h in gui_heights if h > 0)
-        scale = 0.7 #(height / gui_total) if gui_total > 0 else 1
+        # gui_total = sum(h for h in gui_heights if h > 0)
+        # this should be fixed
+        scale = 0.714 #(height / gui_total) if gui_total > 0 else 1
 
         # compute leftover PDF space
         pdf_filled = sum(h * scale for h in gui_heights)

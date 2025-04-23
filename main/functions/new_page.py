@@ -136,10 +136,9 @@ def add_new_page(app):
                 'current_expandable': None
             })
 
-            fullheight = a4_height - 20
-            app._log_min_height = fullheight / 45
-            app._log_max_height = fullheight / 2
-
+            fullheight = int(a4_height) - 20
+            app._log_min_height = fullheight // 45
+            app._log_max_height = fullheight // 2
 
             # initial box
             first_box = app.create_log_box(log_container)

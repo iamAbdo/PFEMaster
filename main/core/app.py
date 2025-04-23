@@ -121,23 +121,27 @@ class WordApp:
             return
 
         page_data = self.log_boxes[-1]
-        full_h = int(self.a4_height) - 20
 
         # freeze old expandable
         cur = page_data["current_expandable"]
         if cur and cur["handle"]:
-            cur["handle"].destroy()
+            handle = cur["handle"]
+            handle_height = handle.winfo_height()  
+            current_height = cur["frame"].winfo_height()
+            new_height = current_height - handle_height
+            
+            handle.destroy()
+            cur["handle"] = None
             cur["expandable"] = False
-            cur["frame"].place_configure(
-                height=cur["frame"].winfo_height()
-            )
+            cur["frame"].place_configure(height=new_height) 
 
-        # create & place new
+        # Update first box since its idle or what ever
+        page_data["container"].update_idletasks()
+
+        # now create & place the new one
         new_box = self.create_log_box(page_data["container"])
         y_offset = sum(b["frame"].winfo_height() for b in page_data["boxes"])
-        init_h = full_h / 45
-        new_box["frame"].place(relwidth=1, y=y_offset, height=init_h)
-
+        new_box["frame"].place(relwidth=1, y=y_offset, height=self._log_min_height)
         page_data["boxes"].append(new_box)
         page_data["current_expandable"] = new_box
 
