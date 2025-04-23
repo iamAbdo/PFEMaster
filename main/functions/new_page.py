@@ -104,7 +104,7 @@ def add_new_page(app):
                     ruler_canvas.create_text(
                         canvas_width-20,  # Position text to left of lines
                         y_pos,
-                        text=str(3000 + j),
+                        text=str(app.TeteStart + j),
                         anchor="ne",  # Northeast anchor
                         font=('Arial', max(6, app.root.taille - 4)),  # Smaller font size
                         fill="black"
@@ -113,7 +113,7 @@ def add_new_page(app):
                 ruler_canvas.create_text(
                     canvas_width-20, 
                     9*division_height - 12,
-                    text=str(3000 + 9),
+                    text=str(app.TeteStart + 9),
                     anchor="ne",  
                     font=('Arial', max(6, app.root.taille - 4)), 
                     fill="black"

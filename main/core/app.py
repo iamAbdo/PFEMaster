@@ -1,4 +1,5 @@
 import tkinter as tk
+import re
 from tkinter import ttk, colorchooser
 from gui.controls import setup_controls
 from gui.canvas import setup_canvas
@@ -41,6 +42,8 @@ class WordApp:
 
         # Project Information
         self.project_info = project_info
+
+        self.TeteStart  = int(re.sub(r'[^\d]', '', self.project_info['tete']))
 
         # Tracking boxes
         self.log_boxes = []  

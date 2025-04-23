@@ -198,7 +198,8 @@ class PDFExporter:
 
         # diagnostic backgrounds
         first_col_width = table._colWidths[0]; last_row_height = table._rowHeights[-1]
-        pdf.setFillColor(colors.red); pdf.rect(margin, table_bottom_y, first_col_width, last_row_height, stroke=0, fill=1); pdf.setFillColor(colors.black)
+        # pdf.setFillColor(colors.red); 
+        pdf.rect(margin, table_bottom_y, first_col_width, last_row_height, stroke=0, fill=0); pdf.setFillColor(colors.black)
         x_log_col = margin + first_col_width; log_width = table._colWidths[1]
         pdf.setFillColor(colors.cyan); pdf.rect(x_log_col, table_bottom_y, log_width, last_row_height, stroke=0, fill=1); pdf.setFillColor(colors.black)
 
@@ -244,7 +245,7 @@ class PDFExporter:
 
             # Number labels: invert numbers
             pdf.setFont("Helvetica", 8)
-            label = str(3000 + j )
+            label = str(self.app.TeteStart + j )
             if j==0: 
                 pdf.drawRightString(line_end - 18, y_pos - 12, label)
             else:
@@ -257,7 +258,7 @@ class PDFExporter:
         pdf.line(line_end - 15, y_pos, line_end, y_pos)
         # Number labels: invert numbers
         pdf.setFont("Helvetica", 8)
-        label = str( 3000 + 9 )
+        label = str( self.app.TeteStart + 9 )
         pdf.drawRightString(line_end - 18, y_pos + 12, label)
 
         # Final top line of the ruler
