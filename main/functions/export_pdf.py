@@ -50,7 +50,17 @@ class PDFExporter:
             fontSize=7,
             leading=8,
             alignment=TA_CENTER,
-            wordWrap='LTR'
+            wordWrap='LTR',
+            fontName='Helvetica-Bold'
+        )
+        para_style2 = ParagraphStyle(
+            'WrappedText',
+            parent=self.styles['Normal'],
+            fontSize=6,
+            leading=8,
+            alignment=TA_CENTER,
+            wordWrap='LTR',
+            fontName='Helvetica-Bold'
         )
 
         def rotated_text(text):
@@ -86,14 +96,14 @@ class PDFExporter:
         logo_width = logo_height * aspect_ratio
         
         logo = Image(str(image_path), width=logo_width, height=logo_height)
-        header_content = [[logo, Paragraph("EXPLORATION‐PRODUCTION Division Exploration Direction des Operations Exploration Dpt: Géologie HASSI ‐ MESSAOUD", para_style)]]
+        header_content = [[logo, Paragraph("EXPLORATION‐PRODUCTION \nDivision Exploration Direction des Operations Exploration \nDpt: Géologie HASSI ‐ MESSAOUD", para_style)]]
        
         # 1. Create the image and paragraph
         logo = Image(str(image_path), width=logo_width, height=logo_height)
         text_para = Paragraph(
-            "EXPLORATION‐PRODUCTION Division Exploration Direction des Operations Exploration Dpt: Géologie HASSI ‐ MESSAOUD", 
-            para_style
-        )
+    "EXPLORATION-PRODUCTION <br/> Division Exploration Direction des Operations Exploration <br/> Dpt: Géologie HASSI - MESSAOUD", 
+    para_style2
+)
 
         # 2. Create a simple 2-column table for the image+text combo
         image_text_table = Table([
@@ -101,7 +111,7 @@ class PDFExporter:
         ], colWidths=[logo_width, "*"])
 
         image_text_table.setStyle(TableStyle([
-            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('LEFTPADDING', (0,0), (-1,-1), 0),
             ('RIGHTPADDING', (0,0), (-1,-1), 0),
             ('BOTTOMPADDING', (0,0), (-1,-1), 0),
@@ -113,25 +123,25 @@ class PDFExporter:
             [ 
                 [image_text_table],
                 "", "", "", "", "",
-                Paragraph(str(self.app.project_info["carotte_summary"])), 
+                Paragraph(str(self.app.project_info["carotte_summary"]), para_style), 
                 "", "", "", 
                 "Puits :", 
-                Paragraph(str(self.app.project_info["puits"]))
+                Paragraph(str(self.app.project_info["puits"]), para_style)
             ],
             [ 
                 "", "", "", "", "", "", "", "", "", "", 
                 "Sigle :", 
-                Paragraph(str(self.app.project_info["sigle"]))
+                Paragraph(str(self.app.project_info["sigle"]), para_style)
             ],
             [ 
                 "", "", "", "", "", "", "", "", "", "", 
                 "Permis :", 
-                Paragraph(str(self.app.project_info["permis"]))
+                Paragraph(str(self.app.project_info["permis"]), para_style)
             ],
             [ 
                 "", "", "", "", "", "", "", "", "", "", 
                 "Bloc :", 
-                Paragraph(str(self.app.project_info["bloc"]))
+                Paragraph(str(self.app.project_info["bloc"]), para_style)
             ],
             [ 
                 Paragraph(f"Echelle : {self.app.project_info['echelle']}", para_style), 
