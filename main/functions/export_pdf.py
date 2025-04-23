@@ -138,7 +138,7 @@ class PDFExporter:
                 rotated_text("direct"), 
                 rotated_text("Indir."), 
                 "", "", "25", "75", "", "", ""],
-            [""] + [Paragraph(val, get_paragraph_style(self.app.current_page[index])) if val else "" for index, val in enumerate(input_values)] + ["", ""]
+            ["", ""] + [Paragraph(val, get_paragraph_style(self.app.current_page[index])) if val else "" for index, val in enumerate(input_values)] + ["", ""]
         ]   
 
 
@@ -187,47 +187,93 @@ class PDFExporter:
             ('FONTSIZE', (0,0), (-1,-1), 7),
         ]))
 
+        
         # Draw the table on the PDF
         table.wrap(total_width, 0)
-        table.drawOn(pdf, margin, y_position - table._height)
+
+        table_bottom_y = y_position - table._height
+        table.drawOn(pdf, margin, table_bottom_y)
+
+        first_col_width = table._colWidths[0]
+        last_row_height = table._rowHeights[-1]
+        bg_x = margin
+        bg_y = table_bottom_y
+        pdf.setFillColor(colors.red)
+        pdf.rect(bg_x, bg_y, first_col_width, last_row_height, stroke=0, fill=1)
+        pdf.setFillColor(colors.black)
 
         self._draw_pdf_ruler(
             pdf,
-            x_start=margin , 
-            y_start= sum_header_row_heights + margin, 
-            width=col_widths[0],  
+            x_start=margin,
+            y_start=table_bottom_y,
+            width=first_col_width,
             height=last_row_height
+        )
+        
+        x_log_col = margin + col_widths[0]
+        self._draw_pdf_squares(
+            pdf,
+            x_start = x_log_col,
+            y_start = table_bottom_y,
+            width   = col_widths[1],
+            height  = last_row_height
         )
 
 
-        return y_position - table._height - 10
+        return table_bottom_y - 10
+    
+    def _draw_pdf_squares(self, pdf, x_start, y_start, width, height):
+        """
+        Tile the given rectangle (x_start→x_start+width,
+        y_start→y_start+height) with perfect squares of side=width.
+        """
+        # how many full squares fit vertically?
+        pdf.setLineWidth(0.25)
+        num = int(height // width)
+        for i in range(num):
+            y = y_start + i * width
+            # draw one square
+            pdf.rect(x_start, y, width, width, stroke=1, fill=0)
     
     def _draw_pdf_ruler(self, pdf, x_start, y_start, width, height):
         """Draw ruler markings directly on the PDF canvas"""
-        division_height = height / 10
+        division_height = height / 9
         line_end = x_start + width
-        
-        for j in range(10):
-            y_pos = y_start + j * division_height
-            
+
+        # Draw background box (already drawn in header) if needed
+
+        for j in range(9):
+            y_pos = y_start + height - j * division_height
+
             # Main bold line
             pdf.setLineWidth(1.5)
             pdf.line(line_end - 15, y_pos, line_end, y_pos)
-            
+
             # Subdivisions
             pdf.setLineWidth(0.5)
             for k in range(1, 5):
-                sub_y = y_pos + (k * division_height/5)
+                sub_y = y_pos - (k * division_height/5)
                 pdf.line(line_end - 8, sub_y, line_end, sub_y)
-            
-            # Number labels
-            pdf.setFont("Helvetica", 6)
-            pdf.drawRightString(line_end - 18, y_pos - 2, str(3000 + j))
 
-            print("number " + str(3000 + j) + " at: " + str(y_pos))
+            # Number labels: invert numbers
+            pdf.setFont("Helvetica", 8)
+            label = str(3000 + j )
+            if j==0: 
+                pdf.drawRightString(line_end - 18, y_pos - 12, label)
+            else:
+                pdf.drawRightString(line_end - 18, y_pos - 2, label)
+            print(f"number {label} at: {y_pos}")
 
-        
-        # Final bottom line
+        # Last line
+        y_pos = y_start + height - 9 * division_height
+        pdf.setLineWidth(1.5)
+        pdf.line(line_end - 15, y_pos, line_end, y_pos)
+        # Number labels: invert numbers
+        pdf.setFont("Helvetica", 8)
+        label = str( 3000 + 9 )
+        pdf.drawRightString(line_end - 18, y_pos + 12, label)
+
+        # Final top line of the ruler
         pdf.setLineWidth(1.5)
         pdf.line(line_end - 15, y_start + height, line_end, y_start + height)
 

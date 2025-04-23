@@ -83,11 +83,9 @@ class WordApp:
         inner.pack(fill="both", expand=True)
 
         # **bind click** on the outer frame
-        print("bind click")
         box_frame.bind("<Button-1>", lambda e, b=box_frame: self.open_box_configurator(b))
 
         for w in (box_frame, inner):
-            print(f"binding click on {w}")        # diagnostics
             w.bind("<Button-1>", lambda e, b=box_frame: self.open_box_configurator(b))
 
         handle = None
