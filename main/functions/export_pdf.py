@@ -33,6 +33,7 @@ class PDFExporter:
         # Process each page from the application
         for page_num, page in enumerate(self.app.pages):
             pdf.setPageSize((self.a4_width, self.a4_height))
+            self._current_page_index = page_num
             y_position = self.a4_height - margin
 
             # Draw header and other content
@@ -40,6 +41,7 @@ class PDFExporter:
 
             # Complete the current page
             pdf.showPage()
+
 
         # Append an extra, blank A4 page for comparison
         pdf.setPageSize((self.a4_width, self.a4_height))
@@ -194,30 +196,15 @@ class PDFExporter:
         table_bottom_y = y_position - table._height
         table.drawOn(pdf, margin, table_bottom_y)
 
-        first_col_width = table._colWidths[0]
-        last_row_height = table._rowHeights[-1]
-        bg_x = margin
-        bg_y = table_bottom_y
-        pdf.setFillColor(colors.red)
-        pdf.rect(bg_x, bg_y, first_col_width, last_row_height, stroke=0, fill=1)
-        pdf.setFillColor(colors.black)
+        # diagnostic backgrounds
+        first_col_width = table._colWidths[0]; last_row_height = table._rowHeights[-1]
+        pdf.setFillColor(colors.red); pdf.rect(margin, table_bottom_y, first_col_width, last_row_height, stroke=0, fill=1); pdf.setFillColor(colors.black)
+        x_log_col = margin + first_col_width; log_width = table._colWidths[1]
+        pdf.setFillColor(colors.cyan); pdf.rect(x_log_col, table_bottom_y, log_width, last_row_height, stroke=0, fill=1); pdf.setFillColor(colors.black)
 
-        self._draw_pdf_ruler(
-            pdf,
-            x_start=margin,
-            y_start=table_bottom_y,
-            width=first_col_width,
-            height=last_row_height
-        )
-        
-        x_log_col = margin + col_widths[0]
-        self._draw_pdf_squares(
-            pdf,
-            x_start = x_log_col,
-            y_start = table_bottom_y,
-            width   = col_widths[1],
-            height  = last_row_height
-        )
+        # draw overlays
+        self._draw_pdf_ruler(pdf, margin, table_bottom_y, first_col_width, last_row_height)
+        self._draw_pdf_log_boxes(pdf, x_log_col, table_bottom_y, log_width, last_row_height)
 
 
         return table_bottom_y - 10
@@ -276,6 +263,43 @@ class PDFExporter:
         # Final top line of the ruler
         pdf.setLineWidth(1.5)
         pdf.line(line_end - 15, y_start + height, line_end, y_start + height)
+
+    def _draw_pdf_log_boxes(self, pdf, x_start, y_start, width, height):
+        """
+        Draw one rectangle per on-screen log-box. Add a white filler box as the last entry in page_data['boxes'] if needed.
+        """
+        from reportlab.lib.colors import HexColor
+        pdf.setLineWidth(0.25)
+        page_data = self.app.log_boxes[self._current_page_index]
+
+        # compute total GUI height
+        gui_heights = [entry["frame"].winfo_height() for entry in page_data["boxes"]]
+        gui_total = sum(h for h in gui_heights if h > 0)
+        scale = 0.7 #(height / gui_total) if gui_total > 0 else 1
+
+        # compute leftover PDF space
+        pdf_filled = sum(h * scale for h in gui_heights)
+        leftover = height - pdf_filled
+        if leftover > 0:
+            # add a dummy white box entry
+            dummy_gui_h = leftover / scale
+            class DummyFrame:
+                def __init__(self, h): self._h = h; self.bg_color = "#ffffff"
+                def winfo_height(self): return self._h
+            page_data["boxes"].append({"frame": DummyFrame(dummy_gui_h)})
+
+        # now draw all boxes, bottom-up
+        y = y_start
+        for entry in page_data["boxes"][::-1]:
+            gui_h = entry["frame"].winfo_height()
+            h_pdf = gui_h * scale
+            col = getattr(entry["frame"], "bg_color", None)
+            if col:
+                pdf.setFillColor(HexColor(col)); pdf.rect(x_start, y, width, h_pdf, stroke=1, fill=1); pdf.setFillColor(colors.black)
+            else:
+                pdf.rect(x_start, y, width, h_pdf, stroke=1, fill=0)
+            y += h_pdf
+
 
     #   _   _ _   _ _   _ ____  _____ ____         ____ ___  ____  _____ 
     #  | | | | \ | | | | / ___|| ____|  _ \       / ___/ _ \|  _ \| ____|

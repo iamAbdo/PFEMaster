@@ -43,7 +43,7 @@ class WordApp:
         self.project_info = project_info
 
         # Tracking boxes
-        self.log_boxes = []  # To track boxes in column 1
+        self.log_boxes = []  
         self.current_expandable = None
         
         
@@ -75,7 +75,7 @@ class WordApp:
         """
         box_frame = ttk.Frame(parent, style='LogBox.TFrame')
         # default state
-        box_frame.bg_color = "white"
+        box_frame.bg_color = "#FFFFFF"
         box_frame.texture = ""  
 
         # pack/draw as before…
