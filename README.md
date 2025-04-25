@@ -61,29 +61,6 @@ PFEMaster/
 
 ---
 
-## **✨ Features (v0.1.0-alpha)**  
-### **Implemented**  
-- 📄 **PDF Generation**  
-  - A4 page formatting with dynamic tables  
-  - Text wrapping and cell sizing  
-- ✏️ **Text Formatting**  
-  - Bold text support  
-  - Text rotation (90°/270°)  
-- 🔢 **Dynamic Elements**  
-  - Responsive column widths  
-  - Adjustable log height  
-- 🔐 **Basic Security**  
-  - Encryption/decryption testing (WIP)  
-
-### **🚧 Upcoming (v0.2.0-beta Roadmap)**  
-- 🖼️ **Image support** (Column 2)  
-- 📏 **Graphical ruler** (Column 1)  
-- 🔒 **PDF encryption**  
-- 🗃️ **Project management system**  
-
----
-
-
 ## **📜 License**  
 *Pending decision (Consult ENAGEO for restrictions).*  
 
