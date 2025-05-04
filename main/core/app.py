@@ -8,7 +8,6 @@ from functions.new_page import add_new_page
 
 
 from reportlab.lib.pagesizes import A4
-    
 
 class WordApp:
     def __init__(self, root, project_info):
@@ -57,6 +56,8 @@ class WordApp:
 
         self.configure_tags()
 
+
+    
     def EditSize(self, taille):
         self.root.taille = taille
         if self.current_page:

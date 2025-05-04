@@ -1,4 +1,5 @@
 import tkinter as tk
+from gui.splash import SplashWindow
 from gui.project_info import ProjectInfoWindow
 from core.app import WordApp
 
@@ -12,5 +13,11 @@ def start_main_app(project_info):
 
 if __name__ == "__main__":
     root = tk.Tk()
-    ProjectInfoWindow(root, start_main_app)
+
+    # show splash first
+    def on_splash_create():
+        # now open your existing project‑info dialog
+        ProjectInfoWindow(root, start_main_app)
+
+    SplashWindow(root, on_splash_create)
     root.mainloop()
