@@ -16,11 +16,12 @@ def setup_styles():
             foreground=[('active', 'black'), ('!active', 'black')])
     
     # Add button
-    style.configure('Success.TButton', 
-                    foreground='white', 
-                    background='#28a745', 
-                    bordercolor='#28a745', 
+    style.configure('Success.TButton', font=('Arial', 10, 'bold'), padding=6,
+                    bg="#4CAF50",
+                    fg="white",
+                    borderwidth=0,
                     focuscolor=style.configure('.')['background'])
+    
     
     style.configure("LogBox.TFrame", padding=0)
     
