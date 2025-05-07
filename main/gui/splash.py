@@ -2,6 +2,12 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import font
 
+from core import account as acc
+from tkinter import simpledialog, messagebox
+
+from gui.crypto_section import create_crypto_section
+
+
 class SplashWindow:
     def __init__(self, master, on_create_callback):
         self.master = master
@@ -43,7 +49,10 @@ class SplashWindow:
             lbl.pack(anchor='nw', pady=5)
             lbl.bind("<Enter>", lambda e, l=lbl: l.config(font=self.hover_font, fg="blue"))
             lbl.bind("<Leave>", lambda e, l=lbl: l.config(font=self.label_font, fg="black"))
-            lbl.bind("<Button-1>", lambda e: None)
+            if text == "Account":
+                lbl.bind("<Button-1>", lambda e: self._on_account_click())
+            else:
+                lbl.bind("<Button-1>", lambda e: None)
 
         # Right part (project actions) with left padding for gap
         right = ttk.Frame(master, padding=(20,10,10,10)) # , style='Blue.TFrame')
@@ -105,6 +114,10 @@ class SplashWindow:
         for widget in (open_btn, folder, txt2):
             widget.bind("<Button-1>", lambda e: None)  # Placeholder for future functionality
 
+        # Add Cryptographie Section
+        create_crypto_section(right, square)
+
+
     def _create(self):
         # restore normal window state before next window
         self.master.state('normal')
@@ -119,3 +132,31 @@ class SplashWindow:
             self.master.rowconfigure(i, weight=0)
         # call callback to open project info
         self.on_create()
+
+
+    def _on_account_click(self):
+        user_data = acc.load_account()
+        if user_data:
+            # Show account info with a Disconnect option
+            response = messagebox.askquestion(
+                "Account Info",
+                f"Email: {user_data['email']}\nUsername: {user_data['username']}\n\nDo you want to disconnect?",
+                icon='question'
+            )
+            if response == 'yes':
+                try:
+                    acc.delete_account()
+                    messagebox.showinfo("Logged Out", "You have been disconnected.")
+                except Exception as e:
+                    messagebox.showerror("Error", f"Could not delete account: {e}")
+        else:
+            email = simpledialog.askstring("Login", "Enter email:")
+            if not email:
+                return
+            password = simpledialog.askstring("Login", "Enter password:", show="*")
+            if not password or len(password) < 8:
+                messagebox.showerror("Error", "Password must be at least 8 characters.")
+                return
+            data = acc.save_account(email, password)
+            messagebox.showinfo("Account Logged In", f"Account Logged In for {data['username']}.")
+
