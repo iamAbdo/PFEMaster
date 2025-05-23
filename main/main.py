@@ -1,7 +1,7 @@
 import tkinter as tk
 from gui.splash import SplashWindow
 from gui.project_info import ProjectInfoWindow
-from core.app import WordApp
+from core.app import Sincus
 
 def start_main_app(project_info):
     # Destroy any existing widgets
@@ -9,7 +9,7 @@ def start_main_app(project_info):
         widget.destroy()
     
     # Start main application
-    app = WordApp(root, project_info)
+    app = Sincus(root, project_info)
 
 if __name__ == "__main__":
     root = tk.Tk()

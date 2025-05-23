@@ -9,7 +9,7 @@ from functions.new_page import add_new_page
 
 from reportlab.lib.pagesizes import A4
 
-class WordApp:
+class Sincus:
     def __init__(self, root, project_info):
 
         a4_width, a4_height = A4
