@@ -5,13 +5,10 @@ from gui.controls import setup_controls
 from gui.canvas import setup_canvas
 from utils.styles import setup_styles
 from functions.new_page import add_new_page
-
-
 from reportlab.lib.pagesizes import A4
 
 class Sincus:
     def __init__(self, root, project_info):
-
         a4_width, a4_height = A4
     
         self.a4_width = int(a4_width)
@@ -29,35 +26,154 @@ class Sincus:
         self.root.taille = 12
         self.current_page = None
 
+        # Status bar
         self.status_bar = ttk.Label(self.root, text="Total pages: 0", style='Status.TLabel')
         self.status_bar.grid(row=2, column=0, sticky="ew")
         
+        # Header Frame
         self.header_frame = ttk.Frame(self.root, height=80, style='Header.TFrame')
         self.header_frame.grid(row=0, column=0, sticky="nsew")
         
+        # Toggle Button
+        self.toggle_info_btn = ttk.Button(
+            self.header_frame, 
+            text="Show Project Info", 
+            command=self.toggle_project_info
+        )
+        self.toggle_info_btn.pack(side="right", padx=10, pady=10)
+
+        # Project Info Container (initially hidden)
+        self.project_info_container = ttk.Frame(self.root)
+    
+        # Content Frame (starts in row 1)
+        self.content_frame = ttk.Frame(self.root)
+        self.content_frame.grid(row=1, column=0, sticky="nsew")
+
+        # Grid configuration
+        self.root.grid_rowconfigure(0, weight=0)  # Header
+        self.root.grid_rowconfigure(1, weight=1)  # Content
+        self.root.grid_rowconfigure(2, weight=0)  # Project Info
+        self.root.grid_columnconfigure(0, weight=1)
+        # Content Frame (always in row 1)
         self.content_frame = ttk.Frame(self.root)
         self.content_frame.grid(row=1, column=0, sticky="nsew")
 
 
         # Project Information
         self.project_info = project_info
-
-        self.TeteStart  = int(re.sub(r'[^\d]', '', self.project_info['tete']))
+        self.TeteStart = int(re.sub(r'[^\d]', '', self.project_info['tete']))
 
         # Tracking boxes
         self.log_boxes = []  
         self.current_expandable = None
         
-        
+        # Setup components
         setup_styles()
         setup_controls(self)
         setup_canvas(self)
         add_new_page(self)
-
         self.configure_tags()
 
+    def create_project_info_table(self):
+        # 1) Clear existing widgets
+        for w in self.project_info_container.winfo_children():
+            w.destroy()
 
-    
+        # 2) Fix the outer container to A4 width, disable propagation
+        self.project_info_container.config(
+            width=self.a4_width,
+            height=200
+        )
+        self.project_info_container.pack_propagate(False)
+        self.project_info_container.grid_propagate(False)
+
+        # 3) Create & fix the inner table frame with solid border
+        table_frame = ttk.Frame(self.project_info_container, borderwidth=1, relief='solid')
+        table_frame.config(width=self.a4_width)
+        table_frame.pack(expand=True, fill='both')
+        table_frame.pack_propagate(False)
+        table_frame.grid_propagate(False)
+
+        # 4) Define your cells: (text, row, column, rowspan, colspan)
+        cells = [
+            # Rows 1–4
+            ("EXPLORATION‐PRODUCTION\nDivision\nExploration\nDirection des Operations\nExploration\nDpt: Géologie\nHASSI ‐ MESSAOUD",
+            0, 0, 4, 6),
+            (self.project_info.get('carotte_summary', ''), 0, 6, 4, 4),
+            ("Puits :", 0, 10, 1, 1),
+            (self.project_info.get('puits', ''), 0, 11, 1, 1),
+            ("Sigle :", 1, 10, 1, 1),
+            (self.project_info.get('sigle', ''), 1, 11, 1, 1),
+            ("Permis :", 2, 10, 1, 1),
+            (self.project_info.get('permis', ''), 2, 11, 1, 1),
+            ("Bloc :", 3, 10, 1, 1),
+            (self.project_info.get('bloc', ''), 3, 11, 1, 1),
+
+            # Rows 5–7
+            (f"Echelle : {self.project_info.get('echelle', '')}", 4, 0, 3, 6),
+            (f"Carottier: {self.project_info.get('carottier', '')}", 4, 6, 1, 3),
+            (f"Type de Boue : {self.project_info.get('mud_type', '')}", 4, 9, 1, 2),
+            (f"Carrote: {self.project_info.get('carotte', '')}", 4, 11, 1, 1),
+            (f"Couronne: {self.project_info.get('couronne', '')}", 5, 6, 1, 3),
+            (f"D : {self.project_info.get('d_value', '')}", 5, 9, 1, 1),
+            ("Tete:", 5, 10, 1, 1),
+            (self.project_info.get('tete', ''), 5, 11, 1, 1),
+            (f"Type: {self.project_info.get('core_type', '')}", 6, 6, 1, 3),
+            (f"FUN VIS (s/qt) : {self.project_info.get('fun_vis', '')}", 6, 9, 1, 1),
+            ("Pied:", 6, 10, 1, 1),
+            (self.project_info.get('pied', ''), 6, 11, 1, 1),
+
+            # Rows 8–9
+            ("Côtes (m)", 7, 0, 2, 1),
+            ("Log", 7, 1, 2, 1),
+            ("Nº", 7, 2, 1, 1),
+            ("INDICES", 7, 3, 1, 2),
+            ("Fissures", 7, 5, 2, 1),
+            ("Pendage", 7, 6, 2, 1),
+            ("Calcimètrie", 7, 7, 1, 1),
+            ("Age", 7, 8, 1, 1),
+            ("D E S C R I P T I O N  L I T H O L O G I Q U E  &  O B S E R V A T I O N S",
+            7, 9, 2, 3),
+            ("Echan", 8, 2, 1, 1),
+            ("direct", 8, 3, 1, 1),
+            ("Indir", 8, 4, 1, 1),
+            ("25", 8, 7, 1, 1),
+            ("75", 8, 8, 1, 1),
+        ]
+
+        # 5) Create each label and grid it with single border
+        for text, r, c, rs, cs in cells:
+            lbl = ttk.Label(table_frame,
+                            text=text,
+                            relief='solid',
+                            borderwidth=1,
+                            anchor='w',
+                            padding=5)
+            lbl.grid(row=r, column=c, rowspan=rs, columnspan=cs, sticky='nsew')
+
+        # 6) Enforce A4-width columns
+        total_cols = 12
+        col_min = self.a4_width // total_cols
+        for col in range(total_cols):
+            table_frame.grid_columnconfigure(col, weight=1, minsize=col_min)
+        total_rows = max(r+rs for _, r, _, rs, _ in cells)
+        for row in range(total_rows):
+            table_frame.grid_rowconfigure(row, weight=1)
+
+    def toggle_project_info(self):
+        if hasattr(self, 'project_info_frame_visible') and self.project_info_frame_visible:
+            self.project_info_container.grid_forget()
+            self.toggle_info_btn.config(text="Show Project Info")
+            self.content_frame.grid(row=1, column=0, sticky="nsew")
+            self.project_info_frame_visible = False
+        else:
+            self.create_project_info_table()
+            self.project_info_container.grid(row=1, column=0, sticky="nsew", pady=10)
+            self.toggle_info_btn.config(text="Hide Project Info")
+            self.content_frame.grid(row=2, column=0, sticky="nsew")
+            self.project_info_frame_visible = True
+            self.project_info_container.lift()  
+
     def EditSize(self, taille):
         self.root.taille = taille
         if self.current_page:

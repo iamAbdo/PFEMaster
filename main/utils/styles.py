@@ -28,3 +28,7 @@ def setup_styles():
     # Paper Styling
     style.configure('Column.TFrame', background='#e0e0e0', borderwidth=1, relief='solid', padding=0)
     style.configure('ColumnHeader.TLabel', background='#f0f0f0', relief='ridge', anchor='center')
+    
+    # other
+    style.configure('ProjectInfo.TFrame', background='#ffffff', borderwidth=1, relief='solid')
+    style.configure('Bold.TLabel', font=('Arial', 10, 'bold'))
