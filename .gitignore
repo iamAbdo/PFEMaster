@@ -4,3 +4,11 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+
+# PyInstaller build folders
+build/
+*.spec
+
+# Only keep the main .exe 
+*.exe
+!main.exe  
