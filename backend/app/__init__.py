@@ -6,6 +6,7 @@ from .models import db
 from .auth import auth_bp
 from .user_routes import user_bp
 from .admin_routes import admin_bp
+from .user_management import user_management_bp
 
 def create_app(config_object):
     app = Flask(__name__)
@@ -35,6 +36,7 @@ def create_app(config_object):
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(user_bp, url_prefix='/api/user')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
+    app.register_blueprint(user_management_bp, url_prefix='/api/user-management')
     
     @app.route('/chrome')
     def chrome_debug():
