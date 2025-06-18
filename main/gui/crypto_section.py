@@ -41,7 +41,7 @@ def create_crypto_section(parent, button_size):
         if filepath:
             crypto.decrypt_file(filepath)
 
-    enc_btn = make_btn(frame, "Encrypt", "🔒", handle_encrypt)
+    enc_btn = make_btn(frame, "Chiffré", "🔒", handle_encrypt)
     enc_btn.grid(row=0, column=0, padx=(0, 10))
-    dec_btn = make_btn(frame, "Decrypt", "🔓", handle_decrypt)
+    dec_btn = make_btn(frame, "Dechiffré", "🔓", handle_decrypt)
     dec_btn.grid(row=0, column=1)

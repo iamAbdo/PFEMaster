@@ -12,3 +12,17 @@ build/
 # Only keep the main .exe 
 *.exe
 !main.exe  
+
+
+venv/
+.env
+uploads/
+
+*.md
+
+*.db
+
+*.zip
+
+openssl/*
+backend/certs/*

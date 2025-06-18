@@ -42,7 +42,7 @@ class ProjectInfoWindow:
         # Confirm Button (Green)
         self.confirm_btn = tk.Button(
             self.button_frame,
-            text="Confirm",
+            text="Confirmer",
             command=self.on_confirm,
             bg="#4CAF50",
             fg="white",
@@ -57,7 +57,7 @@ class ProjectInfoWindow:
         # Cancel Button (Red)
         self.cancel_btn = tk.Button(
             self.button_frame,
-            text="Cancel",
+            text="Annuler",
             command=self.on_cancel,
             bg="#f44336",
             fg="white",
@@ -126,7 +126,7 @@ class ProjectInfoWindow:
             self.entries[field_name] = entry
 
         # Special multi-line field for carotte summary
-        carotte_label = ttk.Label(form_grid, text="Carotte Summary")
+        carotte_label = ttk.Label(form_grid, text="Sommaire de la fiche carotte")
         carotte_label.grid(row=100, column=0, columnspan=3, padx=10, pady=5, sticky="w")
 
         self.carotte_text = tk.Text(form_grid, height=5, width=50)
