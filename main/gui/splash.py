@@ -110,57 +110,65 @@ class SplashWindow:
             else:
                 lbl.bind("<Button-1>", lambda e: None)
 
-        # --- RIGHT SECTION (unchanged) ---
-        right = ttk.Frame(master, padding=(20,10,10,10))
-        right.grid(row=1, column=1, sticky='nsew')
+        # --- RIGHT SECTION ---
+        self._refresh_right_section()
+
+    def _refresh_right_section(self):
+        # Destroy current right section
+        for widget in self.master.grid_slaves(row=1, column=1):
+            widget.destroy()
+        right_container = ttk.Frame(self.master, padding=(20,10,10,10))
+        right_container.grid(row=1, column=1, sticky='nsew')
+        right_container.columnconfigure(0, weight=1)
+        # --- SCROLLBAR LOGIC ---
+        screen_h = self.master.winfo_screenheight()
+        min_height_needed = int(screen_h * 0.55)  # estimate needed height for all content
+        use_scroll = screen_h < min_height_needed
+        if use_scroll:
+            canvas = tk.Canvas(right_container, borderwidth=0, highlightthickness=0)
+            vscroll = ttk.Scrollbar(right_container, orient="vertical", command=canvas.yview)
+            scroll_frame = ttk.Frame(canvas)
+            scroll_frame.bind(
+                "<Configure>",
+                lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+            )
+            canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+            canvas.configure(yscrollcommand=vscroll.set)
+            canvas.grid(row=0, column=0, sticky="nsew")
+            vscroll.grid(row=0, column=1, sticky="ns")
+            right = scroll_frame
+        else:
+            right = right_container
         right.columnconfigure(0, weight=1)
         desc = tk.Label(right, text="Gestion de Projet", font=("Arial", 14))
         desc.grid(row=0, column=0, pady=(0,5), sticky='w')
         hr = ttk.Separator(right, orient='horizontal')
         hr.grid(row=1, column=0, sticky='ew', pady=(0,10))
-        self.master.update_idletasks()
-        screen_h = self.master.winfo_screenheight()
-        square = int(screen_h * 0.35)
+        # --- BUTTON SIZE LOGIC ---
+        btn_height = int(screen_h * 0.18)
+        btn_width = int(btn_height * 2.2)
         button_frame = ttk.Frame(right)
         button_frame.grid(row=2, column=0, sticky='w')
-        create_btn = tk.Frame(
-            button_frame,
-            width=square,
-            height=square,
-            relief='raised',
-            borderwidth=2,
-            cursor='hand2'
-        )
+        def make_rect_btn(parent, text, emoji, command=None):
+            btn = tk.Frame(parent, width=btn_width, height=btn_height, bg="#f7c97c", relief='raised', borderwidth=2, cursor='hand2')
+            btn.grid_propagate(False)
+            icon_label = tk.Label(btn, text=emoji, font=("Arial", int(btn_height*0.4)), fg="gray", bg="#f7c97c")
+            icon_label.pack(expand=True)
+            txt_label = tk.Label(btn, text=text, bg="#f7c97c")
+            txt_label.pack(side='bottom', pady=10)
+            widgets = [btn, icon_label, txt_label]
+            if command:
+                for w in widgets:
+                    w.bind("<Button-1>", lambda e: command())
+            return btn
+        create_btn = make_rect_btn(button_frame, "Créer un nouveau projet", "➕", self._create)
         create_btn.grid(row=0, column=0, sticky='w', padx=(0,10))
-        create_btn.grid_propagate(False)
-        plus = tk.Label(create_btn, text="+", font=("Arial", 48), fg="gray")
-        plus.pack(expand=True)
-        txt = tk.Label(create_btn, text="Créer un nouveau projet")
-        txt.pack(side='bottom', pady=10)
-        for widget in (create_btn, plus, txt):
-            widget.bind("<Button-1>", lambda e: self._create())
-        open_btn = tk.Frame(
-            button_frame,
-            width=square,
-            height=square,
-            relief='raised',
-            borderwidth=2,
-            cursor='hand2'
-        )
+        open_btn = make_rect_btn(button_frame, "Ouvrir un projet existant", "📁")
         open_btn.grid(row=0, column=1, sticky='w')
-        open_btn.grid_propagate(False)
-        folder = tk.Label(open_btn, text="📁", font=("Arial", 48), fg="gray")
-        folder.pack(expand=True)
-        txt2 = tk.Label(open_btn, text="Ouvrir un projet existant")
-        txt2.pack(side='bottom', pady=10)
-        for widget in (open_btn, folder, txt2):
-            widget.bind("<Button-1>", lambda e: None)
-        # Only show crypto/admin if logged in
         if self.jwt_token:
-            create_crypto_section(right, square)
+            create_crypto_section(right, btn_height)
             if self.role in ("Geophysicien", "Responsable"):
-                create_admin_section(right, square, self.jwt_token, self.role)
-        # else: do not show crypto/admin
+                create_admin_section(right, btn_height, self.jwt_token, self.role)
 
     def _create(self):
         self.master.state('normal')
@@ -187,26 +195,21 @@ class SplashWindow:
                 if "Compte" in self.left_menu_labels:
                     self.left_menu_labels["Compte"].config(text="Log in")
                 messagebox.showinfo("Déconnexion", "Vous avez été déconnecté.")
+                self._refresh_right_section()
         else:
             # Création d'une fenêtre modale pour saisir email et mot de passe simultanément
             login_win = tk.Toplevel(self.master)
             login_win.title("Connexion")
             login_win.transient(self.master)
             login_win.grab_set()
-
-            # Variables pour stocker les saisies
             email_var = tk.StringVar()
             pwd_var = tk.StringVar()
-
-            # Labels et champs
             tk.Label(login_win, text="Email :", anchor='w').grid(row=0, column=0, padx=10, pady=(10, 5), sticky='w')
             email_entry = tk.Entry(login_win, textvariable=email_var)
             email_entry.grid(row=0, column=1, padx=10, pady=(10, 5))
             tk.Label(login_win, text="Mot de passe :", anchor='w').grid(row=1, column=0, padx=10, pady=5, sticky='w')
             pwd_entry = tk.Entry(login_win, textvariable=pwd_var, show="*")
             pwd_entry.grid(row=1, column=1, padx=10, pady=5)
-
-            # Boutons OK et Annuler
             btn_frame = tk.Frame(login_win)
             btn_frame.grid(row=2, column=0, columnspan=2, pady=(5, 10))
             def on_ok():
@@ -217,11 +220,16 @@ class SplashWindow:
                 login_win.destroy()
             tk.Button(btn_frame, text="OK", width=8, command=on_ok).pack(side='left', padx=5)
             tk.Button(btn_frame, text="Annuler", width=8, command=on_cancel).pack(side='left', padx=5)
-
-            # Focus et modal
+            login_win.update_idletasks()
+            win_w = login_win.winfo_width()
+            win_h = login_win.winfo_height()
+            screen_w = login_win.winfo_screenwidth()
+            screen_h = login_win.winfo_screenheight()
+            x = (screen_w // 2) - (win_w // 2)
+            y = (screen_h // 2) - (win_h // 2)
+            login_win.geometry(f"{win_w}x{win_h}+{x}+{y}")
             email_entry.focus_set()
             self.master.wait_window(login_win)
-
             email = email_var.get().strip()
             password = pwd_var.get()
             if not email or not password:
@@ -229,13 +237,11 @@ class SplashWindow:
             if len(password) < 8:
                 messagebox.showerror("Erreur", "Le mot de passe doit contenir au moins 8 caractères.")
                 return
-
-            # Envoi de la requête d'authentification
             try:
                 response = requests.post(
                     'https://127.0.0.1:5000/api/auth/login',
                     json={"email": email, "password": password},
-                    verify=False  # For dev only; use CA in prod
+                    verify=False
                 )
                 if response.status_code == 200:
                     data = response.json()
@@ -246,57 +252,7 @@ class SplashWindow:
                     if "Compte" in self.left_menu_labels:
                         self.left_menu_labels["Compte"].config(text="Compte")
                     messagebox.showinfo("Connecté", f"Connecté en tant que {email}.")
-                    # Recréation de la section droite
-                    for widget in self.master.grid_slaves(row=1, column=1):
-                        widget.destroy()
-                    right = tk.Frame(self.master, padx=20, pady=10)
-                    right.grid(row=1, column=1, sticky='nsew')
-                    right.columnconfigure(0, weight=1)
-                    desc = tk.Label(right, text="Gestion de Projet", font=("Arial", 14))
-                    desc.grid(row=0, column=0, pady=(0,5), sticky='w')
-                    hr = tk.Frame(right, height=2, bd=1, relief='sunken')
-                    hr.grid(row=1, column=0, sticky='ew', pady=(0,10))
-                    self.master.update_idletasks()
-                    screen_h = self.master.winfo_screenheight()
-                    square = int(screen_h * 0.35)
-                    button_frame = tk.Frame(right)
-                    button_frame.grid(row=2, column=0, sticky='w')
-                    create_btn = tk.Frame(
-                        button_frame,
-                        width=square,
-                        height=square,
-                        relief='raised',
-                        borderwidth=2,
-                        cursor='hand2'
-                    )
-                    create_btn.grid(row=0, column=0, sticky='w', padx=(0,10))
-                    create_btn.grid_propagate(False)
-                    plus = tk.Label(create_btn, text="+", font=("Arial", 48), fg="gray")
-                    plus.pack(expand=True)
-                    txt = tk.Label(create_btn, text="Créer un nouveau projet")
-                    txt.pack(side='bottom', pady=10)
-                    for widget in (create_btn, plus, txt):
-                        widget.bind("<Button-1>", lambda e: self._create())
-                    open_btn = tk.Frame(
-                        button_frame,
-                        width=square,
-                        height=square,
-                        relief='raised',
-                        borderwidth=2,
-                        cursor='hand2'
-                    )
-                    open_btn.grid(row=0, column=1, sticky='w')
-                    open_btn.grid_propagate(False)
-                    folder = tk.Label(open_btn, text="📁", font=("Arial", 48), fg="gray")
-                    folder.pack(expand=True)
-                    txt2 = tk.Label(open_btn, text="Ouvrir un projet existant")
-                    txt2.pack(side='bottom', pady=10)
-                    for widget in (open_btn, folder, txt2):
-                        widget.bind("<Button-1>", lambda e: None)
-                    if self.jwt_token:
-                        create_crypto_section(right, square)
-                        if self.role in ("Geophysicien", "Responsable"):
-                            create_admin_section(right, square, self.jwt_token, self.role)
+                    self._refresh_right_section()
                 else:
                     messagebox.showerror("Erreur", f"Erreur de connexion : {response.text}")
             except Exception as e:

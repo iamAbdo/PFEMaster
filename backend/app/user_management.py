@@ -47,6 +47,7 @@ def create_user():
         email = data.get('email', '').strip()
         password = data.get('password', '')
         is_admin = data.get('is_admin', False)
+        role = data.get('role', 'Geologue')
         
         # Validate required fields
         if not email or not password:
@@ -71,7 +72,8 @@ def create_user():
         new_user = User(
             email=email,
             password_hash=hashed_password,
-            is_admin=is_admin
+            is_admin=is_admin,
+            role=role
         )
         
         db.session.add(new_user)
@@ -83,6 +85,7 @@ def create_user():
                 'id': new_user.id,
                 'email': new_user.email,
                 'is_admin': new_user.is_admin,
+                'role': new_user.role,
                 'created_at': new_user.created_at.isoformat()
             }
         }), 201
