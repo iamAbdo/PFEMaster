@@ -51,7 +51,8 @@ def login():
     access_token = create_access_token(identity=str(user.id))
     return jsonify({
         'token': access_token,
-        'is_admin': user.is_admin
+        'is_admin': user.is_admin,
+        'role': user.role
     }), 200
 
 #def init_ssl_context():

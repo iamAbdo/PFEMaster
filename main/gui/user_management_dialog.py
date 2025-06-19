@@ -15,6 +15,7 @@ class CreateUserDialog:
         self.dialog.resizable(False, False)
         self.dialog.transient(parent)
         self.dialog.grab_set()
+        self.dialog.configure(bg="#ffffff")  # Explicit white background
         
         # Center the dialog
         self.dialog.update_idletasks()
@@ -28,6 +29,7 @@ class CreateUserDialog:
         # Main frame
         main_frame = ttk.Frame(self.dialog, padding="20")
         main_frame.pack(fill='both', expand=True)
+        main_frame.configure(style="White.TFrame")  # Set style for white background
         
         # Title
         title_label = tk.Label(main_frame, text="Créer un nouveau compte", 
@@ -58,6 +60,13 @@ class CreateUserDialog:
                                                show="*", width=40)
         self.confirm_password_entry.pack(fill='x', pady=(0, 15))
         
+        # Role dropdown
+        ttk.Label(form_frame, text="Rôle:").pack(anchor='w', pady=(0, 5))
+        self.role_var = tk.StringVar(value="Geologue")
+        role_options = ["Geologue", "Geophysicien", "Responsable"]
+        self.role_dropdown = ttk.Combobox(form_frame, textvariable=self.role_var, values=role_options, state="readonly", width=37)
+        self.role_dropdown.pack(fill='x', pady=(0, 15))
+        
         # Admin checkbox
         self.is_admin_var = tk.BooleanVar()
         admin_check = ttk.Checkbutton(form_frame, text="Accorder les privilèges d'administrateur", 
@@ -83,9 +92,20 @@ class CreateUserDialog:
         cancel_btn = ttk.Button(button_frame, text="Annuler", command=self.cancel)
         cancel_btn.pack(side='left', padx=(0, 10))
         
-        # Create button
-        create_btn = ttk.Button(button_frame, text="Créer", command=self.create_user)
-        create_btn.pack(side='right')
+        # Green Confirm button (styled like Bootstrap)
+        confirm_btn = tk.Button(
+            button_frame,
+            text="Confirmer",
+            command=self.create_user,
+            bg="#4CAF50",
+            fg="white",
+            borderwidth=0,
+            padx=10,
+            pady=5
+        )
+        confirm_btn.pack(side='right')
+        confirm_btn.bind("<Enter>", lambda e: confirm_btn.config(bg="#45a049"))
+        confirm_btn.bind("<Leave>", lambda e: confirm_btn.config(bg="#4CAF50"))
         
         # Bind Enter key to create user
         self.dialog.bind('<Return>', lambda e: self.create_user())
@@ -131,7 +151,8 @@ class CreateUserDialog:
             data = {
                 'email': self.email_var.get().strip(),
                 'password': self.password_var.get(),
-                'is_admin': self.is_admin_var.get()
+                'is_admin': self.is_admin_var.get(),
+                'role': self.role_var.get()
             }
             
             response = requests.post(

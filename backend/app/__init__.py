@@ -26,7 +26,8 @@ def create_app(config_object):
         if not User.query.filter_by(is_admin=True).first():
             admin = User(
                 email='admin@example.com',
-                is_admin=True
+                is_admin=True,
+                role='Responsable'
             )
             admin.set_password('admin123')  # Change this in production
             db.session.add(admin)

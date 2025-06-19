@@ -25,6 +25,7 @@ def get_users():
             'id': user.id,
             'email': user.email,
             'is_admin': user.is_admin,
+            'role': user.role,
             'created_at': user.created_at.isoformat()
         } for user in users]
     }), 200 
