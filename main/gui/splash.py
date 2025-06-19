@@ -5,6 +5,8 @@ from tkinter import simpledialog, messagebox
 import requests
 from gui.crypto_section import create_crypto_section
 from gui.admin_section import create_admin_section, set_jwt_token
+from PIL import Image, ImageTk
+import os
 
 class SplashWindow:
     def __init__(self, master, on_create_callback):
@@ -14,33 +16,63 @@ class SplashWindow:
         self.master.title("Bienvenue")
         self.jwt_token = None
         self.is_admin = False
-        self.master.rowconfigure(0, weight=1)
+        # Add header row
+        self.master.rowconfigure(0, weight=0)
+        self.master.rowconfigure(1, weight=1)
         self.master.columnconfigure(0, weight=1)
         self.master.columnconfigure(1, weight=4)
         self.label_font = font.Font(family="TkDefaultFont", size=10)
-        self.hover_font = font.Font(family="TkDefaultFont", size=10, underline=1)
+        self.hover_font = font.Font(family="TkDefaultFont", size=10, underline=True)
+
+        # --- HEADER SECTION ---
+        header = tk.Frame(master, bg="#f7c97c", height=80)
+        header.grid(row=0, column=0, columnspan=2, sticky="nsew")
+        header.grid_propagate(False)
+        header.columnconfigure(0, weight=1)
+        header.columnconfigure(1, weight=3)
+        header.columnconfigure(2, weight=1)
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        sonatrach_path = os.path.normpath(os.path.join(current_dir, "..", "images", "Sonatrach.png"))
+        enageo_path = os.path.normpath(os.path.join(current_dir, "..", "images", "enageo-logo-text-white.png"))
+        # Sonatrach logo (left)
+        if os.path.exists(sonatrach_path):
+            sonatrach_img = Image.open(sonatrach_path)
+            sonatrach_img = sonatrach_img.resize((60, 60), Image.Resampling.LANCZOS)
+            sonatrach_photo = ImageTk.PhotoImage(sonatrach_img)
+            logo_label = tk.Label(header, image=sonatrach_photo, bg="#f7c97c")
+            logo_label.grid(row=0, column=0, padx=20, pady=10, sticky="w")
+            self.sonatrach_photo = sonatrach_photo  # Keep reference
+        # ENAGEO logo (right)
+        if os.path.exists(enageo_path):
+            enageo_img = Image.open(enageo_path)
+            enageo_img = enageo_img.resize((120, 40), Image.Resampling.LANCZOS)
+            enageo_photo = ImageTk.PhotoImage(enageo_img)
+            enageo_label = tk.Label(header, image=enageo_photo, bg="#f7c97c")
+            enageo_label.grid(row=0, column=2, padx=20, pady=10, sticky="e")
+            self.enageo_photo = enageo_photo  # Keep reference
+        # Centered title
+        title_label = tk.Label(header, text="PROGRAM DE GESTION DES FICHES CAROTTES", bg="#f7c97c", font=("Arial", 18, "bold"))
+        title_label.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
+
+        # Helper function for rounded rectangle
+        def draw_rounded_rect(canvas, x1, y1, x2, y2, r=16, **kwargs):
+            # Draw corners
+            canvas.create_arc(x1, y1, x1+r*2, y1+r*2, start=90, extent=90, style='pieslice', **kwargs)
+            canvas.create_arc(x2-r*2, y1, x2, y1+r*2, start=0, extent=90, style='pieslice', **kwargs)
+            canvas.create_arc(x2-r*2, y2-r*2, x2, y2, start=270, extent=90, style='pieslice', **kwargs)
+            canvas.create_arc(x1, y2-r*2, x1+r*2, y2, start=180, extent=90, style='pieslice', **kwargs)
+            # Draw sides and center
+            canvas.create_rectangle(x1+r, y1, x2-r, y2, **kwargs)
+            canvas.create_rectangle(x1, y1+r, x2, y2-r, **kwargs)
+
+        # --- LEFT SECTION ---
         left = ttk.Frame(master, padding=(10,10,0,10))
-        left.grid(row=0, column=0, sticky='nsew')
+        left.grid(row=1, column=0, sticky='nsew')
+        left.rowconfigure(0, weight=1)
+        left.columnconfigure(0, weight=1)
         content = ttk.Frame(left)
         content.pack(side='left', fill='both', expand=True)
-        from PIL import Image, ImageTk
-        import os
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        logo_path = os.path.join(current_dir, "..", "images", "Sonatrach.png")
-        logo_path = os.path.normpath(logo_path)
-        if os.path.exists(logo_path):
-            logo_img = Image.open(logo_path)
-            logo_img = logo_img.resize((150, 150), Image.Resampling.LANCZOS)
-            logo_photo = ImageTk.PhotoImage(logo_img)
-            logo_container = ttk.Frame(content)
-            logo_container.pack(anchor='nw', pady=(0, 20))
-            logo_label = tk.Label(logo_container, image=logo_photo)
-            logo_label.image = logo_photo
-            logo_label.pack(anchor='w')
-            logo_text = tk.Label(logo_container, text="Sonatrach", font=("Arial", 12, "bold"))
-            logo_text.pack(anchor='w')
-        else:
-            print(f"Image non trouvée à : {logo_path}")
+        # Remove logo from left section
         left_menu_items = [
             "Paramètres",
             "Compte",
@@ -50,15 +82,11 @@ class SplashWindow:
             "Historique"
         ]
         for text in left_menu_items:
-            lbl = tk.Label(
-                content,
-                text=text,
-                cursor='hand2',
-                font=self.label_font,
-                width=15,
-                anchor='w'
-            )
-            lbl.pack(anchor='nw', pady=5)
+            btn_canvas = tk.Canvas(content, width=160, height=36, highlightthickness=0)
+            btn_canvas.pack(anchor='nw', pady=7)
+            draw_rounded_rect(btn_canvas, 2, 2, 158, 34, r=16, fill="#f7c97c", outline="")
+            lbl = tk.Label(btn_canvas, text=text, cursor='hand2', font=self.label_font, bg="#f7c97c", width=13, anchor='w')
+            lbl.place(x=16, y=6)
             lbl.bind("<Enter>", lambda e, l=lbl: l.config(font=self.hover_font, fg="blue"))
             lbl.bind("<Leave>", lambda e, l=lbl: l.config(font=self.label_font, fg="black"))
             if text == "Compte":
@@ -71,10 +99,12 @@ class SplashWindow:
                 lbl.bind("<Button-1>", lambda e: messagebox.showinfo("Support", "Email : support@sonatrach.dz"))
             else:
                 lbl.bind("<Button-1>", lambda e: None)
+
+        # --- RIGHT SECTION (unchanged) ---
         right = ttk.Frame(master, padding=(20,10,10,10))
-        right.grid(row=0, column=1, sticky='nsew')
+        right.grid(row=1, column=1, sticky='nsew')
         right.columnconfigure(0, weight=1)
-        desc = tk.Label(right, text="Gestion de Projet", font=(None, 14))
+        desc = tk.Label(right, text="Gestion de Projet", font=("Arial", 14))
         desc.grid(row=0, column=0, pady=(0,5), sticky='w')
         hr = ttk.Separator(right, orient='horizontal')
         hr.grid(row=1, column=0, sticky='ew', pady=(0,10))
