@@ -253,7 +253,259 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
             messagebox.showerror("Erreur", f"Impossible de contacter le backend: {e}")
 
     def handle_2():
-        print("hello")
+        try:
+            headers = {}
+            if jwt_token_global:
+                headers['Authorization'] = f'Bearer {jwt_token_global}'
+            response = requests.get(
+                'https://127.0.0.1:5000/api/zone/zones',
+                headers=headers,
+                verify=False
+            )
+            if response.status_code != 200:
+                messagebox.showerror(
+                    "Erreur",
+                    f"Erreur lors de la récupération des zones: {response.text}"
+                )
+                return
+
+            zones = response.json().get('zones', [])
+            win = tk.Toplevel()
+            win.title("Gestion des zones")
+            win.geometry("800x500")
+            win.configure(bg='#f0f0f0')
+
+            main_frame = tk.Frame(win, bg='#f0f0f0')
+            main_frame.pack(fill='both', expand=True, padx=20, pady=20)
+
+            header_frame = tk.Frame(main_frame, bg='#f0f0f0')
+            header_frame.pack(fill='x', pady=(0, 20))
+
+            tk.Label(
+                header_frame,
+                text="Liste des zones",
+                font=("Arial", 16, "bold"),
+                bg='#f0f0f0'
+            ).pack(side='left')
+
+            def add_zone_callback():
+                add_win = tk.Toplevel(win)
+                add_win.title("Ajouter une zone")
+                # add_win.geometry("400x300")
+                add_win.configure(bg='#f0f0f0')
+
+                labels = ['Sigle', 'Puits', 'Bloc', 'Permis']
+                entries = {}
+                for i, label in enumerate(labels):
+                    tk.Label(add_win, text=label, bg='#f0f0f0').grid(row=i, column=0, padx=10, pady=10, sticky='e')
+                    entry = tk.Entry(add_win)
+                    entry.grid(row=i, column=1, padx=10, pady=10)
+                    entries[label.lower()] = entry
+
+                def submit():
+                    data = {k: v.get() for k, v in entries.items()}
+                    if not all(data.values()):
+                        messagebox.showerror("Erreur", "Tous les champs sont obligatoires.")
+                        return
+                    try:
+                        headers = {}
+                        if jwt_token_global:
+                            headers['Authorization'] = f'Bearer {jwt_token_global}'
+                        resp = requests.post(
+                            'https://127.0.0.1:5000/api/zone/zones',
+                            json=data,
+                            headers=headers,
+                            verify=False
+                        )
+                        if resp.status_code == 201:
+                            messagebox.showinfo("Succès", "Zone ajoutée avec succès!")
+                            add_win.destroy()
+                            refresh_zones_table(tree)
+                        else:
+                            error_message = resp.json().get('error', 'Erreur inconnue')
+                            messagebox.showerror("Erreur", error_message)
+                    except Exception as e:
+                        messagebox.showerror("Erreur", f"Impossible d'ajouter la zone: {e}")
+
+                tk.Button(add_win, text="Ajouter", command=submit, bg='#27ae60', fg='white').grid(row=5, column=0, columnspan=2, pady=20)
+
+            tk.Button(
+                header_frame,
+                text="Ajouter une zone",
+                command=add_zone_callback,
+                fg='white',
+                bg='#3498db',
+                relief='flat',
+                padx=10, pady=5
+            ).pack(side='right')
+
+            style = ttk.Style(win)
+            style.configure(
+                "Zone.Treeview",
+                rowheight=32,
+                font=('Arial', 11),
+                fieldbackground='white',
+                bordercolor='#ccc',
+                borderwidth=1
+            )
+            style.configure(
+                "Zone.Treeview.Heading",
+                font=('Arial', 12, 'bold'),
+                relief='flat'
+            )
+            style.layout("Zone.Treeview", [
+                ('Zone.Treeview.treearea', {'sticky': 'nswe'})
+            ])
+
+            tree = Treeview(
+                main_frame,
+                style="Zone.Treeview",
+                columns=('sigle','puits','bloc','permis','actions'),
+                show='headings',
+                height=15
+            )
+            tree.heading('sigle', text='Sigle')
+            tree.heading('puits', text='Puits')
+            tree.heading('bloc', text='Bloc')
+            tree.heading('permis', text='Permis')
+            tree.heading('actions', text='Actions')
+            tree.column('sigle', width=120, anchor='center')
+            tree.column('puits', width=120, anchor='center')
+            tree.column('bloc', width=120, anchor='center')
+            tree.column('permis', width=120, anchor='center')
+            tree.column('actions', width=100, anchor='center')
+
+            tree.tag_configure('evenrow', background='#f9f9f9')
+            tree.tag_configure('oddrow', background='#ffffff')
+
+            scrollbar = tk.Scrollbar(
+                main_frame,
+                orient='vertical',
+                command=tree.yview
+            )
+            tree.configure(yscrollcommand=scrollbar.set)
+            tree.pack(side='left', fill='both', expand=True)
+            scrollbar.pack(side='right', fill='y')
+
+            def refresh_zones_table(tree):
+                for item in tree.get_children():
+                    tree.delete(item)
+                try:
+                    headers = {}
+                    if jwt_token_global:
+                        headers['Authorization'] = f'Bearer {jwt_token_global}'
+                    response = requests.get('https://127.0.0.1:5000/api/zone/zones', headers=headers, verify=False)
+                    if response.status_code == 200:
+                        zones = response.json().get('zones', [])
+                        for idx, zone in enumerate(zones):
+                            tag = 'evenrow' if idx % 2 == 0 else 'oddrow'
+                            tree.insert(
+                                '',
+                                'end',
+                                values=(
+                                    zone['sigle'],
+                                    zone['puits'],
+                                    zone['bloc'],
+                                    zone['permis'],
+                                    ''
+                                ),
+                                tags=(tag,)
+                            )
+                    for i, item in enumerate(tree.get_children()):
+                        if i % 2 == 0:
+                            tree.item(item, tags=('evenrow',))
+                        else:
+                            tree.item(item, tags=('oddrow',))
+                except Exception as e:
+                    messagebox.showerror("Erreur", f"Impossible de rafraîchir les zones: {e}")
+
+            def delete_zone(sigle, puits, bloc, permis):
+                # Find the zoneId by fetching all zones and matching
+                try:
+                    headers = {}
+                    if jwt_token_global:
+                        headers['Authorization'] = f'Bearer {jwt_token_global}'
+                    response = requests.get('https://127.0.0.1:5000/api/zone/zones', headers=headers, verify=False)
+                    if response.status_code == 200:
+                        zones = response.json().get('zones', [])
+                        for zone in zones:
+                            if zone['sigle'] == sigle and zone['puits'] == puits and zone['bloc'] == bloc and zone['permis'] == permis:
+                                zone_id = zone['zoneId']
+                                break
+                        else:
+                            messagebox.showerror("Erreur", "Zone non trouvée.")
+                            return
+                    else:
+                        messagebox.showerror("Erreur", "Impossible de trouver la zone à supprimer.")
+                        return
+                except Exception as e:
+                    messagebox.showerror("Erreur", f"Erreur lors de la recherche de la zone: {e}")
+                    return
+                result = messagebox.askyesno("Confirmation", f"Êtes-vous sûr de vouloir supprimer la zone {sigle}?")
+                if not result:
+                    return
+                try:
+                    headers = {}
+                    if jwt_token_global:
+                        headers['Authorization'] = f'Bearer {jwt_token_global}'
+                    resp = requests.delete(
+                        f'https://127.0.0.1:5000/api/zone/zones/{zone_id}',
+                        headers=headers,
+                        verify=False
+                    )
+                    if resp.status_code == 200:
+                        messagebox.showinfo("Succès", "Zone supprimée avec succès!")
+                        refresh_zones_table(tree)
+                    else:
+                        error_message = resp.json().get('error', 'Erreur inconnue')
+                        messagebox.showerror("Erreur", error_message)
+                except Exception as e:
+                    messagebox.showerror("Erreur", f"Impossible de supprimer la zone: {e}")
+
+            for idx, zone in enumerate(zones):
+                tag = 'evenrow' if idx % 2 == 0 else 'oddrow'
+                tree.insert(
+                    '',
+                    'end',
+                    values=(
+                        zone['sigle'],
+                        zone['puits'],
+                        zone['bloc'],
+                        zone['permis'],
+                        ''
+                    ),
+                    tags=(tag,)
+                )
+
+            def add_delete_buttons():
+                for item in tree.get_children():
+                    sigle, puits, bloc, permis, *_ = tree.item(item, 'values')
+                    bbox = tree.bbox(item, 'actions')
+                    if not bbox:
+                        continue
+                    x, y, width, height = bbox
+                    btn = tk.Button(
+                        tree,
+                        text="Supprimer",
+                        bg='#e74c3c',
+                        fg='white',
+                        font=('Arial', 9),
+                        relief='flat',
+                        padx=5,
+                        pady=2,
+                        command=lambda s=sigle, p=puits, b=bloc, pm=permis: delete_zone(s, p, b, pm)
+                    )
+                    btn.place(
+                        x=x + (width-70)//2,
+                        y=y + (height-20)//2,
+                        width=70,
+                        height=20
+                    )
+
+            win.after(100, add_delete_buttons)
+
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Impossible de contacter le backend: {e}")
 
     base_dir = os.path.dirname(__file__)
     if role == "Geophysicien":

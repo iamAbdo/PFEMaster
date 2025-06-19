@@ -39,4 +39,12 @@ class File(db.Model):
     # Many-to-many relationship for file access
     users_with_access = db.relationship('User', secondary=file_access,
                                       lazy='subquery',
-                                      backref=db.backref('accessible_files', lazy=True)) 
+                                      backref=db.backref('accessible_files', lazy=True))
+
+class Zone(db.Model):
+    __tablename__ = 'zone'
+    zoneId = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    sigle = db.Column(db.String(64), nullable=False)
+    puits = db.Column(db.String(64), nullable=False)
+    bloc = db.Column(db.String(64), nullable=False)
+    permis = db.Column(db.String(64), nullable=False) 

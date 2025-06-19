@@ -7,6 +7,7 @@ from .auth import auth_bp
 from .user_routes import user_bp
 from .admin_routes import admin_bp
 from .user_management import user_management_bp
+from .zone_routes import zone_bp
 
 def create_app(config_object):
     app = Flask(__name__)
@@ -19,7 +20,7 @@ def create_app(config_object):
     
     # Create database tables
     with app.app_context():
-        from .models import User
+        from .models import User, Zone
         db.create_all()
         
         # Create admin user if none exists
@@ -38,6 +39,7 @@ def create_app(config_object):
     app.register_blueprint(user_bp, url_prefix='/api/user')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(user_management_bp, url_prefix='/api/user-management')
+    app.register_blueprint(zone_bp, url_prefix='/api/zone')
     
     @app.route('/chrome')
     def chrome_debug():
