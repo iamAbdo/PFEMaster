@@ -1,6 +1,8 @@
 import tkinter as tk
 import re
-from tkinter import ttk, colorchooser
+import json
+import pickle
+from tkinter import ttk, colorchooser, filedialog, messagebox
 from gui.controls import setup_controls
 from gui.canvas import setup_canvas
 from utils.styles import setup_styles
@@ -66,6 +68,12 @@ class Sincus:
         # Tracking boxes
         self.log_boxes = []  
         self.current_expandable = None
+        
+        # Add missing attributes to fix linter errors
+        self._log_min_height = 50
+        self._log_max_height = 200
+        self.container = None  # Will be set by setup_canvas
+        self.texture_labels = {}  # Track texture labels
         
         # Setup components
         setup_styles()
@@ -176,7 +184,7 @@ class Sincus:
 
     def EditSize(self, taille):
         self.root.taille = taille
-        if self.current_page:
+        if self.current_page and isinstance(self.current_page, list):
             for text_widget in self.current_page:
                 text_widget.configure(font=('Arial', self.root.taille))
                 text_widget.tag_configure("bold", font=('Arial', self.root.taille, 'bold'))
@@ -200,7 +208,7 @@ class Sincus:
 
         # pack/draw as before…
         inner = tk.Frame(box_frame, bg=box_frame.bg_color, bd=1, relief="solid")
-        inner.pack(fill="both", expand=True)
+        inner.pack(fill="both", expand=True, padx=0, pady=0)
 
         # **bind click** on the outer frame
         box_frame.bind("<Button-1>", lambda e, b=box_frame: self.open_box_configurator(b))
@@ -233,8 +241,8 @@ class Sincus:
 
     def add_log_box(self):
         """
-        Called when the “+ Add Log” button is clicked.
-        Finds the current page’s log_container, freezes the previous expandable,
+        Called when the "Add Log" button is clicked.
+        Finds the current page's log_container, freezes the previous expandable,
         then appends & places a fresh one.
         """
         if not self.log_boxes:
@@ -302,8 +310,9 @@ class Sincus:
 
             # remove old texture overlay
             for w in inner.place_slaves():
-                if getattr(w, "_is_texture", False):
+                if w in self.texture_labels:
                     w.destroy()
+                    del self.texture_labels[w]
 
             if box_frame.texture:
                 # tile vertically to fill the height
@@ -312,7 +321,7 @@ class Sincus:
                 # force an update to get actual height
                 inner.update_idletasks()
                 h = inner.winfo_height()
-                # rough line‐height in pixels
+                # rough line-height in pixels
                 line_h = inner.tk.call("font", "metrics", font, "-linespace") or 12
                 count = max(int(h / line_h) + 1, 5)
 
@@ -324,7 +333,7 @@ class Sincus:
                     bd=0, padx=0, pady=0,
                     justify="left", anchor="nw"
                 )
-                tex_label._is_texture = True
+                self.texture_labels[tex_label] = True
                 tex_label.place(relwidth=1, relheight=1)
 
             win.destroy()
@@ -334,7 +343,7 @@ class Sincus:
 
         # — Remove button —
         def remove_and_close():
-            # find & remove from the last page’s list
+            # find & remove from the last page's list
             page = self.log_boxes[-1]
             for entry in page["boxes"]:
                 if entry["frame"] is box_frame:
@@ -354,5 +363,428 @@ class Sincus:
         x = self.root.winfo_rootx() + 50
         y = self.root.winfo_rooty() + 50
         win.geometry(f"+{x}+{y}")
+
+    def save_project(self):
+        """Save the current project to a .sincus file"""
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".sincus",
+            filetypes=[("Sincus Files", "*.sincus"), ("All Files", "*.*")],
+            title="Sauvegarder le projet"
+        )
+        
+        if not file_path:
+            return
+            
+        try:
+            # Prepare data for saving
+            save_data = {
+                'project_info': self.project_info,
+                'pages_data': [],
+                'log_boxes_data': [],
+                'font_size': self.root.taille,
+                'version': '1.0'
+            }
+            
+            # Save text content from all pages
+            for page in self.pages:
+                page_data = []
+                for text_widget in page:
+                    # Get text content
+                    text_content = text_widget.get("1.0", "end-1c")
+                    
+                    # Get bold formatting ranges
+                    bold_ranges = []
+                    start_idx = "1.0"
+                    while True:
+                        try:
+                            range_start = text_widget.tag_nextrange("bold", start_idx)
+                            if not range_start:
+                                break
+                            bold_ranges.append((range_start[0], range_start[1]))
+                            start_idx = range_start[1]
+                        except tk.TclError:
+                            break
+                    
+                    page_data.append({
+                        'content': text_content,
+                        'bold_ranges': bold_ranges
+                    })
+                save_data['pages_data'].append(page_data)
+            
+            # Save log boxes data
+            for page_log_boxes in self.log_boxes:
+                page_boxes_data = []
+                for box in page_log_boxes['boxes']:
+                    box_data = {
+                        'bg_color': getattr(box['frame'], 'bg_color', '#FFFFFF'),
+                        'texture': getattr(box['frame'], 'texture', ''),
+                        'height': box['frame'].winfo_height(),
+                        'expandable': box.get('expandable', False)
+                    }
+                    page_boxes_data.append(box_data)
+                save_data['log_boxes_data'].append(page_boxes_data)
+            
+            # Save to file
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(save_data, f, indent=2, ensure_ascii=False)
+            
+            messagebox.showinfo("Succès", f"Projet sauvegardé dans :\n{file_path}")
+            
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Erreur lors de la sauvegarde :\n{str(e)}")
+
+    def load_project(self):
+        """Load a project from a .sincus file"""
+        file_path = filedialog.askopenfilename(
+            filetypes=[("Sincus Files", "*.sincus"), ("All Files", "*.*")],
+            title="Ouvrir un projet"
+        )
+        
+        if not file_path:
+            return
+            
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                save_data = json.load(f)
+            
+            # Clear current project
+            self.clear_current_project()
+            
+            # Load project info
+            self.project_info = save_data.get('project_info', {})
+            self.TeteStart = int(re.sub(r'[^\d]', '', self.project_info.get('tete', '0')))
+            
+            # Load font size
+            font_size = save_data.get('font_size', 12)
+            self.root.taille = font_size
+            
+            # Recreate pages with loaded data
+            pages_data = save_data.get('pages_data', [])
+            for page_data in pages_data:
+                # Create new page
+                add_new_page(self)
+                
+                # Load text content and formatting
+                current_page = self.pages[-1]
+                for i, text_data in enumerate(page_data):
+                    if i < len(current_page):
+                        text_widget = current_page[i]
+                        text_widget.delete("1.0", "end")
+                        text_widget.insert("1.0", text_data.get('content', ''))
+                        
+                        # Apply bold formatting
+                        for start, end in text_data.get('bold_ranges', []):
+                            text_widget.tag_add("bold", start, end)
+            
+            # Load log boxes data
+            log_boxes_data = save_data.get('log_boxes_data', [])
+            for page_idx, page_boxes_data in enumerate(log_boxes_data):
+                if page_idx < len(self.log_boxes):
+                    page_log_boxes = self.log_boxes[page_idx]
+                    
+                    # Clear existing boxes
+                    for box in page_log_boxes['boxes']:
+                        box['frame'].destroy()
+                    page_log_boxes['boxes'].clear()
+                    
+                    # Recreate boxes with saved data
+                    for box_data in page_boxes_data:
+                        new_box = self.create_log_box(page_log_boxes['container'])
+                        new_box['frame'].bg_color = box_data.get('bg_color', '#FFFFFF')
+                        new_box['frame'].texture = box_data.get('texture', '')
+                        new_box['frame'].place(relwidth=1, height=box_data.get('height', 50))
+                        
+                        # Update inner frame color
+                        inner = new_box['frame'].winfo_children()[0]
+                        inner.config(bg=new_box['frame'].bg_color)
+                        
+                        page_log_boxes['boxes'].append(new_box)
+            
+            # Update status bar
+            self.status_bar.config(text=f"Total pages: {len(self.pages)}")
+            
+            messagebox.showinfo("Succès", f"Projet chargé depuis :\n{file_path}")
+            
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Erreur lors du chargement :\n{str(e)}")
+
+    def load_project_data(self, save_data):
+        """Load project data from save_data (used when opening from splash screen)"""
+        print("=== Starting load_project_data ===")
+        try:
+            # Load font size
+            font_size = save_data.get('font_size', 12)
+            self.root.taille = font_size
+            print(f"Font size loaded: {font_size}")
+            
+            # Clear existing pages and log boxes
+            print("Clearing existing project data...")
+            self.clear_current_project()
+            print("Project data cleared successfully")
+            
+            # IMPORTANT: Recreate the container after clearing
+            print("Recreating container after clearing...")
+            from gui.canvas import setup_canvas
+            setup_canvas(self)
+            print("Container recreated successfully")
+            
+            # Verify container is valid
+            if self.container is None:
+                print("ERROR: Container is still None after recreation")
+                messagebox.showerror("Erreur", "Impossible de créer le conteneur principal")
+                return
+            
+            try:
+                self.container.winfo_exists()
+                print("Container is valid and ready")
+            except Exception as e:
+                print(f"ERROR: Container is still invalid: {e}")
+                messagebox.showerror("Erreur", "Le conteneur principal est invalide")
+                return
+            
+            # Small delay to ensure widgets are properly created
+            self.root.update_idletasks()
+            print("Container setup completed, proceeding with page creation")
+            
+            # Recreate pages with loaded data
+            pages_data = save_data.get('pages_data', [])
+            print(f"Found {len(pages_data)} pages to load")
+            
+            for page_idx, page_data in enumerate(pages_data):
+                print(f"Creating page {page_idx + 1}...")
+                try:
+                    # Create new page
+                    add_new_page(self)
+                    print(f"Page {page_idx + 1} created successfully")
+                    
+                    # Load text content and formatting
+                    current_page = self.pages[-1]
+                    print(f"Loading text content for page {page_idx + 1}...")
+                    for i, text_data in enumerate(page_data):
+                        if i < len(current_page):
+                            text_widget = current_page[i]
+                            content = text_data.get('content', '')
+                            text_widget.delete("1.0", "end")
+                            text_widget.insert("1.0", content)
+                            print(f"  Text widget {i}: loaded content (length: {len(content)})")
+                            
+                            # Apply bold formatting
+                            bold_ranges = text_data.get('bold_ranges', [])
+                            for start, end in bold_ranges:
+                                text_widget.tag_add("bold", start, end)
+                            print(f"  Text widget {i}: applied {len(bold_ranges)} bold ranges")
+                except Exception as e:
+                    print(f"ERROR creating page {page_idx + 1}: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    # Continue with next page instead of failing completely
+                    continue
+            
+            print("Text content loading completed")
+            
+            # Now that pages are created, log boxes structure should be available
+            print(f"After page creation: {len(self.log_boxes)} log box pages available")
+            
+            # Load log boxes data with more robust approach
+            print("Starting log boxes loading process...")
+            self._load_log_boxes_data_robust(save_data)
+            
+        except Exception as e:
+            print(f"ERROR in load_project_data: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            messagebox.showerror("Erreur", f"Erreur lors du chargement des données :\n{str(e)}")
+
+    def _load_log_boxes_data_robust(self, save_data):
+        """More robust log boxes loading with extensive error checking"""
+        print("=== Starting _load_log_boxes_data_robust ===")
+        try:
+            log_boxes_data = save_data.get('log_boxes_data', [])
+            print(f"Found log boxes data for {len(log_boxes_data)} pages")
+            
+            # Ensure we have log boxes to work with
+            if not self.log_boxes:
+                print("WARNING: No log boxes found, but we have log boxes data to load")
+                print("This might happen if pages were created but log boxes weren't initialized")
+                print("Attempting to load log boxes data anyway...")
+                
+                # Try to load log boxes data even if self.log_boxes is empty
+                # This can happen if the container was recreated
+                if log_boxes_data and len(self.pages) > 0:
+                    print("Creating log boxes structure for existing pages...")
+                    for page_idx in range(len(self.pages)):
+                        if page_idx < len(log_boxes_data):
+                            # We need to find the log container for this page
+                            # This is a bit tricky since we need to access the page structure
+                            print(f"Looking for log container in page {page_idx + 1}...")
+                            # For now, let's just show a message that log boxes couldn't be loaded
+                            print(f"Log boxes data available for page {page_idx + 1}: {len(log_boxes_data[page_idx])} boxes")
+                
+                self.status_bar.config(text=f"Total pages: {len(self.pages)}")
+                messagebox.showinfo("Succès", "Projet chargé avec succès! (sans log boxes - conteneur recréé)")
+                return
+            
+            print(f"Current log_boxes structure: {len(self.log_boxes)} entries")
+            
+            # Clear existing log boxes first
+            print("Clearing existing log boxes...")
+            for page_idx, page_log_boxes in enumerate(self.log_boxes):
+                print(f"  Clearing log boxes for page {page_idx + 1}...")
+                for box_idx, box in enumerate(page_log_boxes.get('boxes', [])):
+                    try:
+                        if 'frame' in box and box['frame']:
+                            box['frame'].destroy()
+                            print(f"    Box {box_idx} destroyed successfully")
+                    except Exception as e:
+                        print(f"    WARNING: Could not destroy box {box_idx}: {e}")
+                page_log_boxes['boxes'] = []
+            print("Existing log boxes cleared")
+            
+            for page_idx, page_boxes_data in enumerate(log_boxes_data):
+                print(f"Processing log boxes for page {page_idx}...")
+                
+                if page_idx >= len(self.log_boxes):
+                    print(f"WARNING: Page {page_idx} not found in log_boxes, skipping")
+                    continue
+                
+                page_log_boxes = self.log_boxes[page_idx]
+                print(f"Page log boxes structure: {page_log_boxes}")
+                
+                # Check if container exists and is valid
+                if 'container' not in page_log_boxes:
+                    print(f"ERROR: No container found for page {page_idx}")
+                    continue
+                
+                container = page_log_boxes['container']
+                print(f"Container found: {container}")
+                
+                try:
+                    # Test if container is still valid
+                    container.winfo_exists()
+                    print("Container is valid")
+                except Exception as e:
+                    print(f"ERROR: Container is invalid: {e}")
+                    continue
+                
+                # Recreate boxes with saved data
+                print(f"Creating {len(page_boxes_data)} new boxes...")
+                y_offset = 0  # Start at the top
+                
+                for box_idx, box_data in enumerate(page_boxes_data):
+                    try:
+                        print(f"  Creating box {box_idx + 1}...")
+                        
+                        # Create new box
+                        new_box = self.create_log_box(container)
+                        print(f"    Box created successfully")
+                        
+                        # Set properties
+                        bg_color = box_data.get('bg_color', '#FFFFFF')
+                        texture = box_data.get('texture', '')
+                        height = box_data.get('height', 50) + 4
+                        
+                        new_box['frame'].bg_color = bg_color
+                        new_box['frame'].texture = texture
+                        
+                        print(f"    Properties set: bg_color={bg_color}, texture={texture}, height={height}")
+                        print(f"    Positioning at y={y_offset}")
+                        
+                        # Place the box at the calculated y position
+                        new_box['frame'].place(relwidth=1, y=y_offset, height=height)
+                        print(f"    Box placed successfully at y={y_offset}")
+                        
+                        # Update inner frame color
+                        try:
+                            inner = new_box['frame'].winfo_children()[0]
+                            inner.config(bg=bg_color)
+                            print(f"    Inner frame color updated")
+                        except Exception as e:
+                            print(f"    WARNING: Could not update inner frame color: {e}")
+                        
+                        page_log_boxes['boxes'].append(new_box)
+                        print(f"    Box {box_idx + 1} added to page")
+                        
+                        # Calculate y position for next box (no spacing)
+                        y_offset += height - 5
+                        print(f"    Next box will start at y={y_offset}")
+                        
+                    except Exception as e:
+                        print(f"    ERROR creating box {box_idx + 1}: {e}")
+                        import traceback
+                        traceback.print_exc()
+                        continue
+                
+                print(f"Page {page_idx} log boxes processing completed")
+            
+            # Update status bar
+            self.status_bar.config(text=f"Total pages: {len(self.pages)}")
+            print("Status bar updated")
+            
+            print("=== Log boxes loading completed successfully ===")
+            messagebox.showinfo("Succès", "Projet chargé avec succès!")
+            
+        except Exception as e:
+            print(f"ERROR in _load_log_boxes_data_robust: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            messagebox.showerror("Erreur", f"Erreur lors du chargement des log boxes :\n{str(e)}")
+
+    def clear_current_project(self):
+        """Clear the current project data"""
+        print("=== Starting clear_current_project ===")
+        try:
+            # Clear pages
+            print(f"Clearing {len(self.pages)} pages...")
+            for page_idx, page in enumerate(self.pages):
+                print(f"  Clearing page {page_idx + 1}...")
+                for widget_idx, text_widget in enumerate(page):
+                    try:
+                        text_widget.destroy()
+                        print(f"    Text widget {widget_idx} destroyed successfully")
+                    except Exception as e:
+                        print(f"    WARNING: Could not destroy text widget {widget_idx}: {e}")
+            self.pages.clear()
+            print("Pages cleared")
+            
+            # Clear log boxes
+            print(f"Clearing {len(self.log_boxes)} log box pages...")
+            for page_idx, page_log_boxes in enumerate(self.log_boxes):
+                print(f"  Clearing log boxes for page {page_idx + 1}...")
+                for box_idx, box in enumerate(page_log_boxes['boxes']):
+                    try:
+                        box['frame'].destroy()
+                        print(f"    Log box {box_idx} destroyed successfully")
+                    except Exception as e:
+                        print(f"    WARNING: Could not destroy log box {box_idx}: {e}")
+            self.log_boxes.clear()
+            print("Log boxes cleared")
+            
+            # Clear content frame
+            print("Clearing content frame...")
+            content_widgets = self.content_frame.winfo_children()
+            print(f"  Found {len(content_widgets)} widgets in content frame")
+            for widget_idx, widget in enumerate(content_widgets):
+                try:
+                    widget.destroy()
+                    print(f"    Content widget {widget_idx} destroyed successfully")
+                except Exception as e:
+                    print(f"    WARNING: Could not destroy content widget {widget_idx}: {e}")
+            
+            print("=== clear_current_project completed successfully ===")
+        except Exception as e:
+            print(f"ERROR in clear_current_project: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def is_initialized(self):
+        """Check if the app is properly initialized"""
+        print("=== Checking if app is initialized ===")
+        has_container = hasattr(self, 'container') and self.container is not None
+        has_pages = hasattr(self, 'pages') and len(self.pages) > 0
+        print(f"  Has container: {has_container}")
+        print(f"  Has pages: {has_pages} (count: {len(self.pages) if hasattr(self, 'pages') else 0})")
+        result = has_container and has_pages
+        print(f"  App initialized: {result}")
+        return result
 
 

@@ -19,7 +19,6 @@ def role_required(roles):
 
 @zone_bp.route('/zones', methods=['GET'])
 @jwt_required()
-@role_required(['Geophysicien', 'Responsable'])
 def get_zones():
     zones = Zone.query.all()
     return jsonify({'zones': [

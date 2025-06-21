@@ -15,9 +15,9 @@ if __name__ == "__main__":
     root = tk.Tk()
 
     # show splash first
-    def on_splash_create():
+    def on_splash_create(jwt_token=None):
         # now open your existing project‑info dialog
-        ProjectInfoWindow(root, start_main_app)
+        ProjectInfoWindow(root, start_main_app, jwt_token=jwt_token)
 
     SplashWindow(root, on_splash_create)
     root.mainloop()

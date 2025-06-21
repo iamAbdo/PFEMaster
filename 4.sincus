@@ -1,0 +1,73 @@
+{
+  "project_info": {
+    "puits": "Nord West Trig-2",
+    "sigle": "NWT-2",
+    "permis": "Ohanet II",
+    "bloc": "234a",
+    "echelle": "1/40",
+    "carottier": "12440525",
+    "mud_type": "OBM",
+    "carotte": "11",
+    "couronne": "6\" x 2 5/8\"",
+    "d_value": "1,08",
+    "tete": "2930m",
+    "core_type": "Ci3126",
+    "fun_vis": "46",
+    "pied": "3948m",
+    "carotte_summary": "Carotté : 18 m \nRécupéré : 18m soit 100% \nDate d'extraction de la carotte: 27/06/17"
+  },
+  "pages_data": [
+    [
+      {
+        "content": "",
+        "bold_ranges": []
+      },
+      {
+        "content": "",
+        "bold_ranges": []
+      },
+      {
+        "content": "",
+        "bold_ranges": []
+      },
+      {
+        "content": "",
+        "bold_ranges": []
+      },
+      {
+        "content": "",
+        "bold_ranges": []
+      },
+      {
+        "content": "",
+        "bold_ranges": []
+      },
+      {
+        "content": "",
+        "bold_ranges": []
+      },
+      {
+        "content": "",
+        "bold_ranges": []
+      }
+    ]
+  ],
+  "log_boxes_data": [
+    [
+      {
+        "bg_color": "#80ff80",
+        "texture": "",
+        "height": 104,
+        "expandable": false
+      },
+      {
+        "bg_color": "#ffff80",
+        "texture": "",
+        "height": 77,
+        "expandable": true
+      }
+    ]
+  ],
+  "font_size": 12,
+  "version": "1.0"
+}

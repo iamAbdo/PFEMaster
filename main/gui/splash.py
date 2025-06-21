@@ -1,13 +1,15 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, filedialog, messagebox
 from tkinter import font
-from tkinter import simpledialog, messagebox
+from tkinter import simpledialog
 import requests
+import json
 from gui.crypto_section import create_crypto_section
 from gui.admin_section import create_admin_section, set_jwt_token
 from PIL import Image, ImageTk
 import os
 from gui.settings_dialog import show_settings_dialog
+from core.app import Sincus
 
 class SplashWindow:
     def __init__(self, master, on_create_callback):
@@ -163,7 +165,7 @@ class SplashWindow:
             return btn
         create_btn = make_rect_btn(button_frame, "Créer un nouveau projet", "➕", self._create)
         create_btn.grid(row=0, column=0, sticky='w', padx=(0,10))
-        open_btn = make_rect_btn(button_frame, "Ouvrir un projet existant", "📁")
+        open_btn = make_rect_btn(button_frame, "Ouvrir un projet existant", "📁", self._open)
         open_btn.grid(row=0, column=1, sticky='w')
         if self.jwt_token:
             create_crypto_section(right, btn_height)
@@ -178,7 +180,81 @@ class SplashWindow:
             self.master.columnconfigure(i, weight=0)
         for i in range(self.master.grid_size()[1]):
             self.master.rowconfigure(i, weight=0)
-        self.on_create()
+        self.on_create(self.jwt_token)
+
+    def _open(self):
+        """Open an existing .sincus project file"""
+        print("=== Starting _open in splash screen ===")
+        file_path = filedialog.askopenfilename(
+            filetypes=[("Sincus Files", "*.sincus"), ("All Files", "*.*")],
+            title="Ouvrir un projet existant"
+        )
+        
+        if not file_path:
+            print("No file selected, aborting")
+            return
+            
+        print(f"Selected file: {file_path}")
+        
+        try:
+            print("Reading file...")
+            with open(file_path, 'r', encoding='utf-8') as f:
+                save_data = json.load(f)
+            print("File read successfully")
+            
+            # Extract project info from the saved file
+            project_info = save_data.get('project_info', {})
+            print(f"Project info extracted: {list(project_info.keys())}")
+            
+            # Clear the splash screen and start the main app
+            print("Clearing splash screen...")
+            self.master.state('normal')
+            
+            print("Destroying splash widgets...")
+            for widget in self.master.winfo_children():
+                try:
+                    widget.destroy()
+                    print("  Widget destroyed successfully")
+                except Exception as e:
+                    print(f"  WARNING: Could not destroy widget: {e}")
+            
+            print("Resetting grid configuration...")
+            for i in range(self.master.grid_size()[0]):
+                self.master.columnconfigure(i, weight=0)
+            for i in range(self.master.grid_size()[1]):
+                self.master.rowconfigure(i, weight=0)
+            
+            print("Creating Sincus app...")
+            # Start main application with loaded project info
+            app = Sincus(self.master, project_info)
+            print("Sincus app created successfully")
+            
+            # Load the saved data into the app after ensuring it's initialized
+            def load_when_ready():
+                print("=== load_when_ready called ===")
+                try:
+                    if app.is_initialized():
+                        print("App is initialized, loading project data...")
+                        app.load_project_data(save_data)
+                    else:
+                        print("App not yet initialized, retrying...")
+                        # Retry after a longer delay
+                        self.master.after(200, load_when_ready)
+                except Exception as e:
+                    print(f"ERROR in load_when_ready: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    messagebox.showerror("Erreur", f"Erreur lors de l'initialisation :\n{str(e)}")
+            
+            print("Scheduling load_when_ready...")
+            self.master.after(1000, load_when_ready)  # Increased delay to 1 second
+            print("load_when_ready scheduled")
+            
+        except Exception as e:
+            print(f"ERROR in _open: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            messagebox.showerror("Erreur", f"Erreur lors de l'ouverture du fichier :\n{str(e)}")
 
     def _on_account_click(self):
         if self.jwt_token:

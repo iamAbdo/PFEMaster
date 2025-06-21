@@ -175,17 +175,17 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
             tree = Treeview(
                 main_frame,
                 style="Custom.Treeview",
-                columns=('id','email','role','actions'),
+                columns=('email','role','actions'),
                 show='headings',
                 height=15
             )
             # headings
-            tree.heading('id', text='ID')
+            # tree.heading('id', text='ID')
             tree.heading('email', text='Email')
             tree.heading('role', text='Rôle')
             tree.heading('actions', text='Actions')
             # column widths
-            tree.column('id', width=80, anchor='center')
+            # tree.column('id', width=80, anchor='center')
             tree.column('email', width=300, anchor='w')
             tree.column('role', width=120, anchor='center')
             tree.column('actions', width=100, anchor='center')
@@ -211,7 +211,7 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
                     '',
                     'end',
                     values=(
-                        user['id'],
+                        # user['id'],
                         user['email'],
                         user.get('role', ''),
                         ''  # placeholder for the button

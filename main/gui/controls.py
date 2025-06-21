@@ -20,6 +20,14 @@ def setup_controls(app):
     
     ttk.Button(control_frame, text="+ Add Log", command=lambda: app.add_log_box(), 
                style='Primary.TButton').pack(side=tk.LEFT, padx=5)
+    
+    # Add save and load buttons
+    ttk.Button(control_frame, text="Sauvegarder", command=lambda: app.save_project(), 
+               style='Primary.TButton').pack(side=tk.LEFT, padx=5)
+    
+    ttk.Button(control_frame, text="Ouvrir", command=lambda: app.load_project(), 
+               style='Primary.TButton').pack(side=tk.LEFT, padx=5)
+    
     # ttk.Button(
     #     control_frame, 
     #     text="+ Add Log", 
