@@ -4,6 +4,7 @@ from .models import User, db
 from werkzeug.security import generate_password_hash
 from functools import wraps
 import re
+from .logging_utils import log_user_creation, log_user_deletion
 
 user_management_bp = Blueprint('user_management', __name__)
 
@@ -79,6 +80,12 @@ def create_user():
         db.session.add(new_user)
         db.session.commit()
         
+        # Log user creation
+        current_user_id = get_jwt_identity()
+        current_user = User.query.get(int(current_user_id))
+        if current_user:
+            log_user_creation(int(current_user_id), current_user.email, new_user.email)
+        
         return jsonify({
             'message': 'Utilisateur créé avec succès',
             'user': {
@@ -94,19 +101,25 @@ def create_user():
         db.session.rollback()
         return jsonify({'error': f'Erreur lors de la création de l\'utilisateur: {str(e)}'}), 500
 
-@user_management_bp.route('/delete-user/<int:user_id>', methods=['DELETE'])
+@user_management_bp.route('/delete-user/<email>', methods=['DELETE'])
 @jwt_required()
 @admin_required
-def delete_user(user_id):
+def delete_user(email):
     try:
-        # Prevent admin from deleting themselves
-        current_user_id = get_jwt_identity()
-        if int(current_user_id) == user_id:
-            return jsonify({'error': 'Vous ne pouvez pas supprimer votre propre compte'}), 400
-        
-        user = User.query.get(user_id)
+        # Find user by email
+        user = User.query.filter_by(email=email).first()
         if not user:
             return jsonify({'error': 'Utilisateur non trouvé'}), 404
+        
+        # Prevent admin from deleting themselves
+        current_user_id = get_jwt_identity()
+        if int(current_user_id) == user.id:
+            return jsonify({'error': 'Vous ne pouvez pas supprimer votre propre compte'}), 400
+        
+        # Log user deletion before deleting
+        current_user = User.query.get(int(current_user_id))
+        if current_user:
+            log_user_deletion(int(current_user_id), current_user.email, user.email)
         
         db.session.delete(user)
         db.session.commit()

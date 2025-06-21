@@ -3,6 +3,9 @@ from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identi
 #from OpenSSL import SSL, crypto
 from .models import db, User
 from functools import wraps
+from werkzeug.security import check_password_hash
+from datetime import timedelta
+from .logging_utils import log_login_success, log_login_failure
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -40,20 +43,33 @@ auth_bp = Blueprint('auth', __name__)
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
-    if not data or 'email' not in data or 'password' not in data:
-        return jsonify({'error': 'Missing email or password'}), 400
-    user = User.query.filter_by(email=data['email']).first()
-    if not user or not user.check_password(data['password']):
+    email = data.get('email')
+    password = data.get('password')
+    
+    if not email or not password:
+        log_login_failure(email or "Unknown", "Missing email or password")
+        return jsonify({'error': 'Email and password are required'}), 400
+    
+    user = User.query.filter_by(email=email).first()
+    
+    if user and check_password_hash(user.password_hash, password):
+        access_token = create_access_token(
+            identity=str(user.id),
+            expires_delta=timedelta(hours=24)
+        )
+        
+        # Log successful login
+        log_login_success(user.id, user.email)
+        
+        return jsonify({
+            'token': access_token,
+            'is_admin': user.role == 'Responsable',
+            'role': user.role
+        }), 200
+    else:
+        # Log failed login
+        log_login_failure(email, "Invalid credentials")
         return jsonify({'error': 'Invalid email or password'}), 401
-    # Certificate check commented out
-    #if user.certificate_dn != request.cert_dn:
-    #    return jsonify({'error': 'Certificate does not match user'}), 401
-    access_token = create_access_token(identity=str(user.id))
-    return jsonify({
-        'token': access_token,
-        'is_admin': user.is_admin,
-        'role': user.role
-    }), 200
 
 #def init_ssl_context():
 #    """Initialize SSL context for mutual TLS"""

@@ -28,6 +28,13 @@ def setup_controls(app):
     ttk.Button(control_frame, text="Sauvegarder", command=lambda: app.save_project(), 
                style='Primary.TButton').pack(side=tk.LEFT, padx=5)
     
+    # Add Return to Splash button
+    def return_to_splash():
+        app.return_to_splash()
+    
+    ttk.Button(control_frame, text="Accueil", command=return_to_splash, 
+               style='Primary.TButton').pack(side=tk.LEFT, padx=5)
+    
     # ttk.Button(
     #     control_frame, 
     #     text="+ Add Log", 

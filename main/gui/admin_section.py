@@ -12,12 +12,15 @@ from PIL import Image, ImageTk
 # Global variable to store JWT token
 jwt_token_global = None
 
+# Global variables to track open windows
+open_windows = {}
+
 def set_jwt_token(token):
     global jwt_token_global
     jwt_token_global = token
 
 def create_admin_section(parent, button_size, jwt_token=None, role=None):
-    global jwt_token_global
+    global jwt_token_global, open_windows
     if jwt_token:
         jwt_token_global = jwt_token
     
@@ -52,6 +55,12 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
 
     def handle_file_access_management():
         """Handle file access management for all PDFs"""
+        # Check if window is already open
+        if 'files_window' in open_windows and open_windows['files_window'].winfo_exists():
+            open_windows['files_window'].lift()  # Bring to front
+            open_windows['files_window'].focus_force()  # Focus the window
+            return
+        
         try:
             headers = {}
             if jwt_token_global:
@@ -80,6 +89,16 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
 
             # Create file management window
             win = tk.Toplevel()
+            open_windows['files_window'] = win  # Store reference to window
+            
+            # Handle window close event
+            def on_window_close():
+                if 'files_window' in open_windows:
+                    del open_windows['files_window']
+                win.destroy()
+            
+            win.protocol("WM_DELETE_WINDOW", on_window_close)
+            
             win.title("Gestion d'accès aux fichiers")
             win.geometry("800x500")  # Reduced from 900x600
             win.configure(bg='#f0f0f0')
@@ -231,6 +250,11 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
 
             def refresh_files_table():
                 """Refresh the files table"""
+                # Clear existing buttons first
+                for widget in tree.winfo_children():
+                    if isinstance(widget, tk.Button):
+                        widget.destroy()
+                
                 for item in tree.get_children():
                     tree.delete(item)
                 
@@ -275,6 +299,11 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
 
             def add_action_buttons():
                 """Add action buttons to each row"""
+                # Clear any existing buttons first
+                for widget in tree.winfo_children():
+                    if isinstance(widget, tk.Button):
+                        widget.destroy()
+                
                 for item in tree.get_children():
                     file_data = file_data_dict.get(item)
                     if not file_data:
@@ -346,57 +375,13 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
         except Exception as e:
             messagebox.showerror("Erreur", f"Impossible de contacter le backend: {e}")
 
-    def refresh_users_table(tree):
-        """Refresh the users table with latest data"""
-        for item in tree.get_children():
-            tree.delete(item)
-        
-        try:
-            headers = {}
-            if jwt_token_global:
-                headers['Authorization'] = f'Bearer {jwt_token_global}'
-            response = requests.get('https://127.0.0.1:5000/api/admin/users', headers=headers, verify=False)
-            if response.status_code == 200:
-                users = response.json().get('users', [])
-                for user in users:
-                    tree.insert('', 'end', values=(
-                        user['id'],
-                        user['email'],
-                        user.get('role', '')
-                    ))
-                for i, item in enumerate(tree.get_children()):
-                    if i % 2 == 0:
-                        tree.item(item, tags=('evenrow',))
-                    else:
-                        tree.item(item, tags=('oddrow',))
-        except Exception as e:
-            messagebox.showerror("Erreur", f"Impossible de rafraîchir les données: {e}")
-
-    def delete_user(user_id, user_email, tree):
-        """Delete a user"""
-        result = messagebox.askyesno("Confirmation", 
-                                   f"Êtes-vous sûr de vouloir supprimer l'utilisateur {user_email}?")
-        if not result:
-            return
-        try:
-            headers = {}
-            if jwt_token_global:
-                headers['Authorization'] = f'Bearer {jwt_token_global}'
-            response = requests.delete(
-                f'https://127.0.0.1:5000/api/user-management/delete-user/{user_id}',
-                headers=headers,
-                verify=False
-            )
-            if response.status_code == 200:
-                messagebox.showinfo("Succès", "Utilisateur supprimé avec succès!")
-                refresh_users_table(tree)
-            else:
-                error_message = response.json().get('error', 'Erreur inconnue')
-                messagebox.showerror("Erreur", error_message)
-        except Exception as e:
-            messagebox.showerror("Erreur", f"Impossible de supprimer l'utilisateur: {e}")
-
     def handle_1():
+        # Check if window is already open
+        if 'users_window' in open_windows and open_windows['users_window'].winfo_exists():
+            open_windows['users_window'].lift()  # Bring to front
+            open_windows['users_window'].focus_force()  # Focus the window
+            return
+        
         try:
             headers = {}
             if jwt_token_global:
@@ -415,6 +400,16 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
 
             users = response.json().get('users', [])
             win = tk.Toplevel()
+            open_windows['users_window'] = win  # Store reference to window
+            
+            # Handle window close event
+            def on_window_close():
+                if 'users_window' in open_windows:
+                    del open_windows['users_window']
+                win.destroy()
+            
+            win.protocol("WM_DELETE_WINDOW", on_window_close)
+            
             win.title("Gestion des utilisateurs")
             win.geometry("700x450")  # Reduced from 800x500
             win.configure(bg='#f0f0f0')
@@ -474,17 +469,17 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
             tree = Treeview(
                 main_frame,
                 style="Custom.Treeview",
-                columns=('email','role','actions'),
+                columns=('id','email','role','actions'),
                 show='headings',
                 height=15
             )
             # headings
-            # tree.heading('id', text='ID')
+            tree.heading('id', text='ID')
             tree.heading('email', text='Email')
             tree.heading('role', text='Rôle')
             tree.heading('actions', text='Actions')
             # column widths
-            # tree.column('id', width=80, anchor='center')
+            tree.column('id', width=80, anchor='center')
             tree.column('email', width=250, anchor='w')  # Reduced from 300
             tree.column('role', width=100, anchor='center')  # Reduced from 120
             tree.column('actions', width=80, anchor='center')  # Reduced from 100
@@ -503,6 +498,61 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
             tree.pack(side='left', fill='both', expand=True)
             scrollbar.pack(side='right', fill='y')
 
+            def refresh_users_table(tree):
+                """Refresh the users table with latest data"""
+                # Clear existing buttons first
+                for widget in tree.winfo_children():
+                    if isinstance(widget, tk.Button):
+                        widget.destroy()
+                
+                for item in tree.get_children():
+                    tree.delete(item)
+                
+                try:
+                    headers = {}
+                    if jwt_token_global:
+                        headers['Authorization'] = f'Bearer {jwt_token_global}'
+                    response = requests.get('https://127.0.0.1:5000/api/admin/users', headers=headers, verify=False)
+                    if response.status_code == 200:
+                        users = response.json().get('users', [])
+                        for idx, user in enumerate(users):
+                            tag = 'evenrow' if idx % 2 == 0 else 'oddrow'
+                            tree.insert('', 'end', values=(
+                                user['id'],
+                                user['email'],
+                                user.get('role', ''),
+                                ''  # placeholder for actions
+                            ), tags=(tag,))
+                        
+                        # Re-add delete buttons after refresh
+                        win.after(100, add_delete_buttons)
+                except Exception as e:
+                    messagebox.showerror("Erreur", f"Impossible de rafraîchir les données: {e}")
+
+            def delete_user(user_id, user_email, tree):
+                """Delete a user"""
+                result = messagebox.askyesno("Confirmation", 
+                                           f"Êtes-vous sûr de vouloir supprimer l'utilisateur {user_email}?")
+                if not result:
+                    return
+                try:
+                    headers = {}
+                    if jwt_token_global:
+                        headers['Authorization'] = f'Bearer {jwt_token_global}'
+                    response = requests.delete(
+                        f'https://127.0.0.1:5000/api/user-management/delete-user/{user_email}',
+                        headers=headers,
+                        verify=False
+                    )
+                    if response.status_code == 200:
+                        messagebox.showinfo("Succès", "Utilisateur supprimé avec succès!")
+                        refresh_users_table(tree)
+                    else:
+                        error_message = response.json().get('error', 'Erreur inconnue')
+                        messagebox.showerror("Erreur", error_message)
+                except Exception as e:
+                    messagebox.showerror("Erreur", f"Impossible de supprimer l'utilisateur: {e}")
+
             # populate with stripes
             for idx, user in enumerate(users):
                 tag = 'evenrow' if idx % 2 == 0 else 'oddrow'
@@ -510,7 +560,7 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
                     '',
                     'end',
                     values=(
-                        # user['id'],
+                        user['id'],
                         user['email'],
                         user.get('role', ''),
                         ''  # placeholder for the button
@@ -520,12 +570,18 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
 
             def add_delete_buttons():
                 """Place a small delete button neatly inside each 'actions' cell."""
+                # Clear any existing buttons first
+                for widget in tree.winfo_children():
+                    if isinstance(widget, tk.Button):
+                        widget.destroy()
+                
                 for item in tree.get_children():
                     user_id, user_email, *_ = tree.item(item, 'values')
                     bbox = tree.bbox(item, 'actions')
                     if not bbox:
                         continue
                     x, y, width, height = bbox
+                    # Use default arguments to capture current values
                     btn = tk.Button(
                         tree,
                         text="Supprimer",
@@ -535,7 +591,7 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
                         relief='flat',
                         padx=3,
                         pady=1,
-                        command=lambda uid=user_id, email=user_email: delete_user(uid, email, tree)
+                        command=lambda uid=user_id, email=user_email, t=tree: delete_user(uid, email, t)
                     )
                     btn.place(
                         x=x + (width-60)//2,
@@ -551,6 +607,12 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
             messagebox.showerror("Erreur", f"Impossible de contacter le backend: {e}")
 
     def handle_2():
+        # Check if window is already open
+        if 'zones_window' in open_windows and open_windows['zones_window'].winfo_exists():
+            open_windows['zones_window'].lift()  # Bring to front
+            open_windows['zones_window'].focus_force()  # Focus the window
+            return
+        
         try:
             headers = {}
             if jwt_token_global:
@@ -569,6 +631,16 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
 
             zones = response.json().get('zones', [])
             win = tk.Toplevel()
+            open_windows['zones_window'] = win  # Store reference to window
+            
+            # Handle window close event
+            def on_window_close():
+                if 'zones_window' in open_windows:
+                    del open_windows['zones_window']
+                win.destroy()
+            
+            win.protocol("WM_DELETE_WINDOW", on_window_close)
+            
             win.title("Gestion des zones")
             win.geometry("700x450")  # Reduced from 800x500
             win.configure(bg='#f0f0f0')
@@ -688,6 +760,12 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
             scrollbar.pack(side='right', fill='y')
 
             def refresh_zones_table(tree):
+                """Refresh the zones table with latest data"""
+                # Clear existing buttons first
+                for widget in tree.winfo_children():
+                    if isinstance(widget, tk.Button):
+                        widget.destroy()
+                
                 for item in tree.get_children():
                     tree.delete(item)
                 try:
@@ -711,11 +789,9 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
                                 ),
                                 tags=(tag,)
                             )
-                    for i, item in enumerate(tree.get_children()):
-                        if i % 2 == 0:
-                            tree.item(item, tags=('evenrow',))
-                        else:
-                            tree.item(item, tags=('oddrow',))
+                        
+                        # Re-add delete buttons after refresh
+                        win.after(100, add_delete_buttons)
                 except Exception as e:
                     messagebox.showerror("Erreur", f"Impossible de rafraîchir les zones: {e}")
 
@@ -778,12 +854,19 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
                 )
 
             def add_delete_buttons():
+                """Place a small delete button neatly inside each 'actions' cell."""
+                # Clear any existing buttons first
+                for widget in tree.winfo_children():
+                    if isinstance(widget, tk.Button):
+                        widget.destroy()
+                
                 for item in tree.get_children():
                     sigle, puits, bloc, permis, *_ = tree.item(item, 'values')
                     bbox = tree.bbox(item, 'actions')
                     if not bbox:
                         continue
                     x, y, width, height = bbox
+                    # Use default arguments to capture current values
                     btn = tk.Button(
                         tree,
                         text="Supprimer",
@@ -793,7 +876,7 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
                         relief='flat',
                         padx=3,
                         pady=1,
-                        command=lambda s=sigle, p=puits, b=bloc, pm=permis: delete_zone(s, p, b, pm)
+                        command=lambda s=sigle, p=puits, b=bloc, pm=permis, t=tree: delete_zone(s, p, b, pm)
                     )
                     btn.place(
                         x=x + (width-60)//2,

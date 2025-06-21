@@ -3,8 +3,9 @@ from flask import Blueprint, request, jsonify, current_app, send_file
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.utils import secure_filename
 import magic
-from .models import db, File, User
+from .models import db, User, File
 from datetime import datetime
+from .logging_utils import log_file_upload, log_file_download, log_file_share, log_file_delete, log_user_creation, log_user_deletion
 # from .auth import require_cert
 
 user_bp = Blueprint('user', __name__)
@@ -24,7 +25,7 @@ def upload_file():
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
     access_list = request.form.getlist('access')
-    user_id = int(get_jwt_identity())
+    user_id = get_jwt_identity()
     user_upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], str(user_id))
     os.makedirs(user_upload_dir, exist_ok=True)
     filename = secure_filename(file.filename or 'unknown.pdf')
@@ -43,10 +44,15 @@ def upload_file():
         new_file.users_with_access.extend(users)
     db.session.add(new_file)
     db.session.commit()
+    
+    # Log file upload
+    current_user = User.query.get(int(user_id))
+    if current_user:
+        log_file_upload(int(user_id), current_user.email, filename)
+    
     return jsonify({
         'message': 'File uploaded successfully',
-        'filename': filename,
-        'access_list': [user.email for user in new_file.users_with_access]
+        'file_id': new_file.id
     }), 201
 
 @user_bp.route('/files/export-pdf', methods=['POST'])
@@ -61,8 +67,8 @@ def export_pdf():
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
     
-    user_id = int(get_jwt_identity())
-    user = User.query.get(user_id)
+    user_id = get_jwt_identity()
+    user = User.query.get(int(user_id))
     if not user:
         return jsonify({'error': 'User not found'}), 404
     
@@ -94,6 +100,9 @@ def export_pdf():
     db.session.add(new_file)
     db.session.commit()
     
+    # Log file upload
+    log_file_upload(int(user_id), user.email, filename)
+    
     return jsonify({
         'message': 'PDF exported successfully',
         'filename': filename,
@@ -107,8 +116,8 @@ def export_pdf():
 #@require_cert
 def get_user_files():
     """Get files owned by or shared with the current user"""
-    user_id = int(get_jwt_identity())
-    user = User.query.get_or_404(user_id)
+    user_id = get_jwt_identity()
+    user = User.query.get_or_404(int(user_id))
     
     owned_files = [{
         'id': file.id,
@@ -134,8 +143,8 @@ def get_user_files():
 @jwt_required()
 def get_all_files():
     """Get all files in the system (admin only)"""
-    user_id = int(get_jwt_identity())
-    current_user = User.query.get(user_id)
+    user_id = get_jwt_identity()
+    current_user = User.query.get(int(user_id))
     
     if not current_user:
         return jsonify({'error': 'User not found'}), 404
@@ -149,7 +158,7 @@ def get_all_files():
     
     files_data = []
     for file in all_files:
-        is_owner = file.owner_id == user_id
+        is_owner = file.owner_id == int(user_id)
         files_data.append({
             'id': file.id,
             'filename': file.filename,
@@ -167,8 +176,8 @@ def get_all_files():
 @jwt_required()
 def delete_file(file_id):
     """Delete a file"""
-    user_id = int(get_jwt_identity())
-    current_user = User.query.get(user_id)
+    user_id = get_jwt_identity()
+    current_user = User.query.get(int(user_id))
     
     if not current_user:
         return jsonify({'error': 'User not found'}), 404
@@ -176,7 +185,7 @@ def delete_file(file_id):
     file = File.query.get_or_404(file_id)
     
     # Check if user owns the file OR is an admin (Responsable)
-    if file.owner_id != user_id and current_user.role != 'Responsable':
+    if file.owner_id != int(user_id) and current_user.role != 'Responsable':
         return jsonify({'error': 'You can only delete files you own'}), 403
     
     try:
@@ -188,6 +197,11 @@ def delete_file(file_id):
         db.session.delete(file)
         db.session.commit()
         
+        # Log file deletion
+        current_user = User.query.get(int(user_id))
+        if current_user:
+            log_file_delete(file_id, file.filename, int(user_id))
+        
         return jsonify({'message': 'File deleted successfully'}), 200
         
     except Exception as e:
@@ -198,9 +212,9 @@ def delete_file(file_id):
 @jwt_required()
 #@require_cert
 def update_access(file_id):
-    user_id = int(get_jwt_identity())
+    user_id = get_jwt_identity()
     file = File.query.get_or_404(file_id)
-    if file.owner_id != user_id:
+    if file.owner_id != int(user_id):
         return jsonify({'error': 'Not authorized'}), 403
     data = request.get_json()
     if not data or 'access_list' not in data:
@@ -208,6 +222,12 @@ def update_access(file_id):
     users = User.query.filter(User.email.in_(data['access_list'])).all()
     file.users_with_access = users
     db.session.commit()
+    
+    # Log file sharing
+    current_user = User.query.get(int(user_id))
+    if current_user:
+        log_file_share(file_id, file.filename, int(user_id), [user.email for user in users])
+    
     return jsonify({
         'message': 'Access list updated',
         'access_list': [user.email for user in file.users_with_access]
@@ -217,8 +237,8 @@ def update_access(file_id):
 @jwt_required()
 #@require_cert
 def download_file(file_id):
-    user_id = int(get_jwt_identity())
-    current_user = User.query.get(user_id)
+    user_id = get_jwt_identity()
+    current_user = User.query.get(int(user_id))
     
     if not current_user:
         return jsonify({'error': 'User not found'}), 404
@@ -226,12 +246,17 @@ def download_file(file_id):
     file = File.query.get_or_404(file_id)
     
     # Check if user owns the file, has access, OR is an admin (Responsable)
-    has_access = (file.owner_id == user_id or 
-                  user_id in [u.id for u in file.users_with_access] or
+    has_access = (file.owner_id == int(user_id) or 
+                  int(user_id) in [u.id for u in file.users_with_access] or
                   current_user.role == 'Responsable')
     
     if not has_access:
         return jsonify({'error': 'Not authorized'}), 403
+    
+    # Log file download
+    current_user = User.query.get(int(user_id))
+    if current_user:
+        log_file_download(file_id, file.filename, int(user_id))
     
     return send_file(
         file.path,
@@ -244,8 +269,8 @@ def download_file(file_id):
 @jwt_required()
 def get_user_profile():
     """Get current user's profile information"""
-    user_id = int(get_jwt_identity())
-    user = User.query.get(user_id)
+    user_id = get_jwt_identity()
+    user = User.query.get(int(user_id))
     if not user:
         return jsonify({'error': 'User not found'}), 404
     
@@ -261,8 +286,8 @@ def get_user_profile():
 @jwt_required()
 def get_geologues():
     """Get all Geologue users for file sharing"""
-    user_id = int(get_jwt_identity())
-    current_user = User.query.get(user_id)
+    user_id = get_jwt_identity()
+    current_user = User.query.get(int(user_id))
     
     if not current_user:
         return jsonify({'error': 'User not found'}), 404
@@ -284,8 +309,8 @@ def get_geologues():
 @jwt_required()
 def get_available_users():
     """Get all available users (Geologues and Geophysiciens) for file sharing"""
-    user_id = int(get_jwt_identity())
-    current_user = User.query.get(user_id)
+    user_id = get_jwt_identity()
+    current_user = User.query.get(int(user_id))
     
     if not current_user:
         return jsonify({'error': 'User not found'}), 404
@@ -309,8 +334,8 @@ def get_available_users():
 @jwt_required()
 def share_file(file_id):
     """Share a file with other users"""
-    user_id = int(get_jwt_identity())
-    current_user = User.query.get(user_id)
+    user_id = get_jwt_identity()
+    current_user = User.query.get(int(user_id))
     
     if not current_user:
         return jsonify({'error': 'User not found'}), 404
@@ -318,7 +343,7 @@ def share_file(file_id):
     file = File.query.get_or_404(file_id)
     
     # Check if user owns the file OR is an admin (Responsable)
-    if file.owner_id != user_id and current_user.role != 'Responsable':
+    if file.owner_id != int(user_id) and current_user.role != 'Responsable':
         return jsonify({'error': 'You can only share files you own'}), 403
     
     data = request.get_json()
@@ -342,6 +367,11 @@ def share_file(file_id):
     
     db.session.commit()
     
+    # Log file sharing
+    current_user = User.query.get(int(user_id))
+    if current_user:
+        log_file_share(file_id, file.filename, int(user_id), shared_with)
+    
     return jsonify({
         'message': f'File shared with {len(shared_with)} user(s)',
         'shared_with': shared_with
@@ -351,8 +381,8 @@ def share_file(file_id):
 @jwt_required()
 def unshare_file(file_id):
     """Unshare a file from specific users"""
-    user_id = int(get_jwt_identity())
-    current_user = User.query.get(user_id)
+    user_id = get_jwt_identity()
+    current_user = User.query.get(int(user_id))
     
     if not current_user:
         return jsonify({'error': 'User not found'}), 404
@@ -360,7 +390,7 @@ def unshare_file(file_id):
     file = File.query.get_or_404(file_id)
     
     # Check if user owns the file OR is an admin (Responsable)
-    if file.owner_id != user_id and current_user.role != 'Responsable':
+    if file.owner_id != int(user_id) and current_user.role != 'Responsable':
         return jsonify({'error': 'You can only unshare files you own'}), 403
     
     data = request.get_json()
@@ -384,6 +414,11 @@ def unshare_file(file_id):
     
     db.session.commit()
     
+    # Log file unsharing
+    current_user = User.query.get(int(user_id))
+    if current_user:
+        log_file_share(file_id, file.filename, int(user_id), removed_from)
+    
     return jsonify({
         'message': f'Access removed for {len(removed_from)} user(s)',
         'removed_from': removed_from
@@ -393,8 +428,8 @@ def unshare_file(file_id):
 @jwt_required()
 def get_shared_users(file_id):
     """Get list of users who have access to a specific file"""
-    user_id = int(get_jwt_identity())
-    current_user = User.query.get(user_id)
+    user_id = get_jwt_identity()
+    current_user = User.query.get(int(user_id))
     
     if not current_user:
         return jsonify({'error': 'User not found'}), 404
@@ -402,7 +437,7 @@ def get_shared_users(file_id):
     file = File.query.get_or_404(file_id)
     
     # Check if user owns the file OR is an admin (Responsable)
-    if file.owner_id != user_id and current_user.role != 'Responsable':
+    if file.owner_id != int(user_id) and current_user.role != 'Responsable':
         return jsonify({'error': 'Not authorized to view shared users'}), 403
     
     return jsonify({
@@ -418,8 +453,8 @@ def get_shared_users(file_id):
 @jwt_required()
 def get_users_for_sharing(file_id):
     """Get all users for file sharing, including the file owner"""
-    user_id = int(get_jwt_identity())
-    current_user = User.query.get(user_id)
+    user_id = get_jwt_identity()
+    current_user = User.query.get(int(user_id))
     
     if not current_user:
         return jsonify({'error': 'User not found'}), 404
@@ -427,7 +462,7 @@ def get_users_for_sharing(file_id):
     file = File.query.get_or_404(file_id)
     
     # Check if user owns the file OR is an admin (Responsable)
-    if file.owner_id != user_id and current_user.role != 'Responsable':
+    if file.owner_id != int(user_id) and current_user.role != 'Responsable':
         return jsonify({'error': 'Not authorized to share this file'}), 403
     
     # Get all users (Geologues and Geophysiciens)
@@ -454,4 +489,27 @@ def get_users_for_sharing(file_id):
     return jsonify({
         'users_for_sharing': users_for_sharing,
         'file_owner_id': file.owner_id
+    }), 200
+
+@user_bp.route('/activity-logs', methods=['GET'])
+@jwt_required()
+def get_activity_logs():
+    """Get activity logs (admin only)"""
+    user_id = get_jwt_identity()
+    current_user = User.query.get(int(user_id))
+    
+    if not current_user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    # Only Responsable users can access activity logs
+    if current_user.role != 'Responsable':
+        return jsonify({'error': 'Insufficient privileges'}), 403
+    
+    # Get logs ordered by newest first
+    from .models import ActivityLog
+    logs = ActivityLog.query.order_by(ActivityLog.created_at.desc()).limit(100).all()
+    
+    return jsonify({
+        'logs': [log.to_dict() for log in logs],
+        'total_count': len(logs)
     }), 200 

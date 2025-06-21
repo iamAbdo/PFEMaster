@@ -316,14 +316,18 @@ class PDFExporter:
         ]))
 
         table.wrap(total_width, 0)
-        table_bottom_y = y_position - table._height
+        table_bottom_y = y_position - getattr(table, '_height', 0)
         table.drawOn(pdf, margin, table_bottom_y)
 
-        first_col_width = table._colWidths[0]
-        last_row_height = table._rowHeights[-1]
+        # Get table dimensions safely
+        col_widths = getattr(table, '_colWidths', [])
+        row_heights = getattr(table, '_rowHeights', [])
+        
+        first_col_width = col_widths[0] if col_widths else 0
+        last_row_height = row_heights[-1] if row_heights else 0
         pdf.rect(margin, table_bottom_y, first_col_width, last_row_height, stroke=0, fill=0)
         x_log_col = margin + first_col_width
-        log_width = table._colWidths[1]
+        log_width = col_widths[1] if len(col_widths) > 1 else 0
         pdf.setFillColor(colors.cyan)
         pdf.rect(x_log_col, table_bottom_y, log_width, last_row_height, stroke=0, fill=1)
         pdf.setFillColor(colors.black)
@@ -379,7 +383,7 @@ class PDFExporter:
         if leftover > 0:
             dummy_gui_h = leftover / scale
             class DummyFrame:
-                def __init__(self, h): self._h = h; self.bg_color = "#ffffff"
+                def __init__(self, h): self._h = h; self.bg_color = "#ffffff"; self.texture = ""
                 def winfo_height(self): return self._h
             page_data["boxes"].append({"frame": DummyFrame(dummy_gui_h)})
 
@@ -388,14 +392,54 @@ class PDFExporter:
             gui_h = entry["frame"].winfo_height()
             h_pdf = gui_h * scale
             col = getattr(entry["frame"], "bg_color", None)
+            texture = getattr(entry["frame"], "texture", "")
+            
             if col:
                 pdf.setFillColor(HexColor(col))
                 pdf.rect(x_start, y, width, h_pdf, stroke=1, fill=1)
                 pdf.setFillColor(colors.black)
             else:
                 pdf.rect(x_start, y, width, h_pdf, stroke=1, fill=0)
+            
+            # Add texture overlay if texture exists
+            if texture:
+                self._draw_texture_overlay(pdf, x_start, y, width, h_pdf, texture, col)
+            
             y += h_pdf
 
+    def _draw_texture_overlay(self, pdf, x_start, y_start, width, height, texture, bg_color):
+        """Draw texture overlay on the PDF log box"""
+        try:
+            # Set font for texture
+            pdf.setFont("Courier", 6)  # Smaller font for texture
+            
+            # Calculate line spacing
+            line_height = 8  # Approximate line height for font size 6
+            
+            # Calculate number of lines needed
+            num_lines = max(int(height / line_height), 3)
+            
+            # Draw texture lines
+            for i in range(num_lines):
+                y_pos = y_start + height - (i * line_height) - line_height/2
+                
+                # Only draw if within the box bounds
+                if y_pos >= y_start and y_pos <= y_start + height:
+                    # Set text color - use black for most textures, but adjust for dark backgrounds
+                    if bg_color and bg_color.lower() in ['#000000', '#006400']:  # Black or dark green
+                        pdf.setFillColor(colors.white)
+                    else:
+                        pdf.setFillColor(colors.black)
+                    
+                    # Draw the texture symbol
+                    pdf.drawString(x_start + 2, y_pos, texture)
+                    
+                    # Reset to black for next iteration
+                    pdf.setFillColor(colors.black)
+                    
+        except Exception as e:
+            print(f"Error drawing texture overlay: {e}")
+            # Continue without texture if there's an error
 
     #   _   _ _   _ _   _ ____  _____ ____         ____ ___  ____  _____ 
     #  | | | | \ | | | | / ___|| ____|  _ \       / ___/ _ \|  _ \| ____|

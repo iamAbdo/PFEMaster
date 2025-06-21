@@ -9,6 +9,7 @@ from gui.admin_section import create_admin_section, set_jwt_token
 from PIL import Image, ImageTk
 import os
 from gui.settings_dialog import show_settings_dialog
+from gui.history_dialog import show_history_dialog
 from core.app import Sincus
 from utils.auth_state import get_jwt_token_global, set_jwt_token_global
 
@@ -85,12 +86,16 @@ class SplashWindow:
             "Aide",
             "À propos",
             "Support",
-            "Historique"
         ]
+        
+        # Add "Historique" only for admins
+        if self.is_admin:
+            left_menu_items.append("Historique")
+            
         for text in left_menu_items:
             btn_canvas = tk.Canvas(content, width=160, height=36, highlightthickness=0)
             btn_canvas.pack(anchor='nw', pady=7)
-            draw_rounded_rect(btn_canvas, 2, 2, 158, 34, r=16, fill="#f7c97c", outline="")
+            self.draw_rounded_rect(btn_canvas, 2, 2, 158, 34, r=16, fill="#f7c97c", outline="")
             # Dynamic label for Compte/Log in
             label_text = text
             if text == "Compte":
@@ -110,6 +115,8 @@ class SplashWindow:
                 lbl.bind("<Button-1>", lambda e: messagebox.showinfo("Aide", "Consultez la documentation ou contactez le support."))
             elif text == "Support":
                 lbl.bind("<Button-1>", lambda e: messagebox.showinfo("Support", "Email : support@sonatrach.dz"))
+            elif text == "Historique":
+                lbl.bind("<Button-1>", lambda e: show_history_dialog(self.master))
             else:
                 lbl.bind("<Button-1>", lambda e: None)
 
@@ -274,7 +281,7 @@ class SplashWindow:
                 if "Compte" in self.left_menu_labels:
                     self.left_menu_labels["Compte"].config(text="Log in")
                 messagebox.showinfo("Déconnexion", "Vous avez été déconnecté.")
-                self._refresh_right_section()
+                self._refresh_entire_interface()
         else:
             # Création d'une fenêtre modale pour saisir email et mot de passe simultanément
             login_win = tk.Toplevel(self.master)
@@ -333,8 +340,79 @@ class SplashWindow:
                     if "Compte" in self.left_menu_labels:
                         self.left_menu_labels["Compte"].config(text="Compte")
                     messagebox.showinfo("Connecté", f"Connecté en tant que {email}.")
-                    self._refresh_right_section()
+                    self._refresh_entire_interface()
                 else:
                     messagebox.showerror("Erreur", f"Erreur de connexion : {response.text}")
             except Exception as e:
                 messagebox.showerror("Erreur", f"Erreur lors de la connexion : {e}")
+
+    def _refresh_entire_interface(self):
+        """Refresh both left menu and right section when admin status changes"""
+        # Destroy current left section
+        for widget in self.master.grid_slaves(row=1, column=0):
+            widget.destroy()
+        
+        # Recreate left section
+        left = ttk.Frame(self.master, padding=(10,10,0,10))
+        left.grid(row=1, column=0, sticky='nsew')
+        left.rowconfigure(0, weight=1)
+        left.columnconfigure(0, weight=1)
+        content = ttk.Frame(left)
+        content.pack(side='left', fill='both', expand=True)
+        
+        # Clear the labels dictionary
+        self.left_menu_labels = {}
+        
+        # Recreate left menu items
+        left_menu_items = [
+            "Paramètres",
+            "Compte",
+            "Aide",
+            "À propos",
+            "Support",
+        ]
+        
+        # Add "Historique" only for admins
+        if self.is_admin:
+            left_menu_items.append("Historique")
+            
+        for text in left_menu_items:
+            btn_canvas = tk.Canvas(content, width=160, height=36, highlightthickness=0)
+            btn_canvas.pack(anchor='nw', pady=7)
+            self.draw_rounded_rect(btn_canvas, 2, 2, 158, 34, r=16, fill="#f7c97c", outline="")
+            # Dynamic label for Compte/Log in
+            label_text = text
+            if text == "Compte":
+                label_text = "Compte" if self.jwt_token else "Log in"
+            lbl = tk.Label(btn_canvas, text=label_text, cursor='hand2', font=self.label_font, bg="#f7c97c", width=13, anchor='w')
+            self.left_menu_labels[text] = lbl
+            lbl.place(x=16, y=6)
+            lbl.bind("<Enter>", lambda e, l=lbl: l.config(font=self.hover_font, fg="blue"))
+            lbl.bind("<Leave>", lambda e, l=lbl: l.config(font=self.label_font, fg="black"))
+            if text == "Paramètres":
+                lbl.bind("<Button-1>", lambda e: show_settings_dialog(self.master))
+            elif text == "Compte":
+                lbl.bind("<Button-1>", lambda e: self._on_account_click())
+            elif text == "À propos":
+                lbl.bind("<Button-1>", lambda e: messagebox.showinfo("À propos", "Sincus Fiche carottes\nENAGEO - Sonatrach © 2025"))
+            elif text == "Aide":
+                lbl.bind("<Button-1>", lambda e: messagebox.showinfo("Aide", "Consultez la documentation ou contactez le support."))
+            elif text == "Support":
+                lbl.bind("<Button-1>", lambda e: messagebox.showinfo("Support", "Email : support@sonatrach.dz"))
+            elif text == "Historique":
+                lbl.bind("<Button-1>", lambda e: show_history_dialog(self.master))
+            else:
+                lbl.bind("<Button-1>", lambda e: None)
+        
+        # Refresh right section
+        self._refresh_right_section()
+
+    def draw_rounded_rect(self, canvas, x1, y1, x2, y2, r=16, **kwargs):
+        # Draw corners
+        canvas.create_arc(x1, y1, x1+r*2, y1+r*2, start=90, extent=90, style='pieslice', **kwargs)
+        canvas.create_arc(x2-r*2, y1, x2, y1+r*2, start=0, extent=90, style='pieslice', **kwargs)
+        canvas.create_arc(x2-r*2, y2-r*2, x2, y2, start=270, extent=90, style='pieslice', **kwargs)
+        canvas.create_arc(x1, y2-r*2, x1+r*2, y2, start=180, extent=90, style='pieslice', **kwargs)
+        # Draw sides and center
+        canvas.create_rectangle(x1+r, y1, x2-r, y2, **kwargs)
+        canvas.create_rectangle(x1, y1+r, x2, y2-r, **kwargs)

@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from .models import db, Zone, User
+from .logging_utils import log_zone_creation, log_zone_deletion
 
 zone_bp = Blueprint('zone', __name__)
 
@@ -47,6 +48,14 @@ def add_zone():
     )
     db.session.add(zone)
     db.session.commit()
+    
+    # Log zone creation
+    user_id = get_jwt_identity()
+    current_user = User.query.get(int(user_id))
+    if current_user:
+        zone_info = {'sigle': zone.sigle, 'puits': zone.puits, 'bloc': zone.bloc, 'permis': zone.permis}
+        log_zone_creation(int(user_id), current_user.email, zone_info)
+    
     return jsonify({'message': 'Zone added', 'zoneId': zone.zoneId}), 201
 
 @zone_bp.route('/zones/<int:zone_id>', methods=['DELETE'])
@@ -58,4 +67,12 @@ def delete_zone(zone_id):
         return jsonify({'error': 'Zone not found'}), 404
     db.session.delete(zone)
     db.session.commit()
+    
+    # Log zone deletion
+    user_id = get_jwt_identity()
+    current_user = User.query.get(int(user_id))
+    if current_user:
+        zone_info = {'sigle': zone.sigle, 'puits': zone.puits, 'bloc': zone.bloc, 'permis': zone.permis}
+        log_zone_deletion(int(user_id), current_user.email, zone_info)
+    
     return jsonify({'message': 'Zone deleted'}), 200 

@@ -85,6 +85,9 @@ class Sincus:
         setup_canvas(self)
         add_new_page(self)
         self.configure_tags()
+        
+        # Add keyboard shortcut for return to splash
+        self.root.bind("<Control-Home>", lambda e: self.return_to_splash())
 
     def create_project_info_table(self):
         # 1) Clear existing widgets
@@ -212,7 +215,7 @@ class Sincus:
         setattr(box_frame, 'texture', "")
 
         # pack/draw as before…
-        inner = tk.Frame(box_frame, bg=box_frame.bg_color, bd=1, relief="solid")
+        inner = tk.Frame(box_frame, bg=getattr(box_frame, 'bg_color', '#FFFFFF'), bd=1, relief="solid")
         inner.pack(fill="both", expand=True, padx=0, pady=0)
 
         # **bind click** on the outer frame
@@ -293,57 +296,197 @@ class Sincus:
 
     def open_box_configurator(self, box_frame):
         """
-        Pops up a small dialog to choose bg color, texture, or remove the box.
+        Pops up a dialog to choose geological material (with predefined colors) and texture for holes/structures.
         """
         win = tk.Toplevel(self.root)
-        win.title("Configure Box")
+        win.title("Configure Geological Log")
         win.transient(self.root)
         win.grab_set()
+        win.geometry("400x500")
 
-        # — Color chooser —
-        def pick_color():
-            c = colorchooser.askcolor(initialcolor=getattr(box_frame, 'bg_color', '#FFFFFF'), parent=win)
-            if c and c[1]:
-                setattr(box_frame, 'bg_color', c[1])
-                inner = box_frame.winfo_children()[0]
-                inner.config(bg=c[1])
+        # Geological materials with their predefined colors
+        geological_materials = self.get_geological_materials_mapping()
 
-        ttk.Button(win, text="Choose Color…", command=pick_color)\
-            .pack(fill="x", padx=10, pady=(10,5))
+        # Texture options for holes/structures
+        texture_options = {
+            "Remplissage uni": "",
+            "Stratifications (----)": "----",
+            "Fractures (||||)": "||||",
+            "Cross-bedding (////)": "////",
+            "Lamines ondulées (∿∿∿)": "∿∿∿",
+            "Bioturbation (●●●)": "●●●",
+            "Stylolithes (xxxx)": "xxxx",
+            "Porosité vuggy (○ ○ ○)": "○ ○ ○",
+            "Traces biologiques (+ + +)": "+ + +"
+        }
 
-        # — Texture dropdown —
-        textures = ["++++", "-----", "//////", "-+-+-+-+", "--.--."]
-        tex_var = tk.StringVar(value=getattr(box_frame, 'texture', ''))
-        ttk.Label(win, text="Texture:").pack(anchor="w", padx=10)
-        combo = ttk.Combobox(
-            win, textvariable=tex_var,
-            values=textures, state="readonly"
+        # Main frame
+        main_frame = ttk.Frame(win, padding="10")
+        main_frame.pack(fill="both", expand=True)
+
+        # Title
+        title_label = ttk.Label(main_frame, text="Configuration du Log Géologique", 
+                               font=("Arial", 12, "bold"))
+        title_label.pack(pady=(0, 15))
+
+        # Material selection section
+        material_frame = ttk.LabelFrame(main_frame, text="Type Lithologique", padding="10")
+        material_frame.pack(fill="x", pady=(0, 10))
+
+        # Create material selection with color preview
+        material_var = tk.StringVar()
+        current_bg_color = getattr(box_frame, 'bg_color', '#FFFFFF')
+        
+        # Find current material based on color
+        current_material = "Autre"
+        for material, color in geological_materials.items():
+            if color.lower() == current_bg_color.lower():
+                current_material = material
+                break
+        
+        material_var.set(current_material)
+
+        # Material dropdown with color preview
+        material_label = ttk.Label(material_frame, text="Sélectionner le matériau:")
+        material_label.pack(anchor="w", pady=(0, 5))
+
+        material_combo_frame = ttk.Frame(material_frame)
+        material_combo_frame.pack(fill="x", pady=(0, 10))
+
+        material_combo = ttk.Combobox(
+            material_combo_frame, 
+            textvariable=material_var,
+            values=list(geological_materials.keys()),
+            state="readonly",
+            width=25
         )
-        combo.pack(fill="x", padx=10, pady=(0,10))
+        material_combo.pack(side="left", fill="x", expand=True)
 
-        # — Apply (OK) —
+        # Color preview
+        color_preview = tk.Frame(material_combo_frame, width=30, height=20, 
+                                bg=geological_materials.get(current_material, '#FFFFFF'),
+                                relief="solid", bd=1)
+        color_preview.pack(side="right", padx=(10, 0))
+
+        # Update color preview when material changes
+        def update_color_preview(*args):
+            selected_material = material_var.get()
+            if selected_material in geological_materials:
+                color = geological_materials[selected_material]
+                color_preview.config(bg=color)
+
+        material_var.trace("w", update_color_preview)
+
+        # Texture selection section
+        texture_frame = ttk.LabelFrame(main_frame, text="Texture / Structures", padding="10")
+        texture_frame.pack(fill="x", pady=(0, 10))
+
+        texture_label = ttk.Label(texture_frame, text="Sélectionner la texture (optionnel):")
+        texture_label.pack(anchor="w", pady=(0, 5))
+
+        texture_var = tk.StringVar()
+        current_texture = getattr(box_frame, 'texture', '')
+        
+        # Find current texture
+        current_texture_name = "Remplissage uni"
+        for texture_name, texture_symbol in texture_options.items():
+            if texture_symbol == current_texture:
+                current_texture_name = texture_name
+                break
+        
+        texture_var.set(current_texture_name)
+
+        texture_combo = ttk.Combobox(
+            texture_frame,
+            textvariable=texture_var,
+            values=list(texture_options.keys()),
+            state="readonly"
+        )
+        texture_combo.pack(fill="x", pady=(0, 10))
+
+        # Preview section
+        preview_frame = ttk.LabelFrame(main_frame, text="Aperçu", padding="10")
+        preview_frame.pack(fill="both", expand=True, pady=(0, 10))
+
+        preview_label = ttk.Label(preview_frame, text="Aperçu du log:")
+        preview_label.pack(anchor="w", pady=(0, 5))
+
+        # Preview box
+        preview_box = tk.Frame(preview_frame, height=60, bg="#FFFFFF", 
+                              relief="solid", bd=1)
+        preview_box.pack(fill="x", pady=(0, 5))
+
+        # Update preview function
+        def update_preview(*args):
+            selected_material = material_var.get()
+            selected_texture = texture_var.get()
+            
+            # Update background color
+            if selected_material in geological_materials:
+                color = geological_materials[selected_material]
+                preview_box.config(bg=color)
+            
+            # Update texture overlay
+            # Remove existing texture
+            for widget in preview_box.winfo_children():
+                widget.destroy()
+            
+            # Add new texture if selected
+            if selected_texture in texture_options and texture_options[selected_texture]:
+                texture_symbol = texture_options[selected_texture]
+                texture_label = tk.Label(
+                    preview_box,
+                    text=texture_symbol,
+                    bg=color if selected_material in geological_materials else "#FFFFFF",
+                    font=("Courier", 10),
+                    bd=0, padx=0, pady=0,
+                    justify="left", anchor="nw"
+                )
+                texture_label.place(relwidth=1, relheight=1)
+
+        # Bind preview updates
+        material_var.trace("w", update_preview)
+        texture_var.trace("w", update_preview)
+
+        # Buttons frame
+        buttons_frame = ttk.Frame(main_frame)
+        buttons_frame.pack(fill="x", pady=(10, 0))
+
+        # Apply button
         def apply_and_close():
-            setattr(box_frame, 'texture', tex_var.get())
+            selected_material = material_var.get()
+            selected_texture = texture_var.get()
+            
+            # Set background color
+            if selected_material in geological_materials:
+                color = geological_materials[selected_material]
+                setattr(box_frame, 'bg_color', color)
+                inner = box_frame.winfo_children()[0]
+                inner.config(bg=color)
+            
+            # Set texture
+            texture_symbol = texture_options.get(selected_texture, "")
+            setattr(box_frame, 'texture', texture_symbol)
+            
+            # Update texture overlay
             inner = box_frame.winfo_children()[0]
-
-            # remove old texture overlay
+            
+            # Remove old texture overlay
             for w in inner.place_slaves():
                 if w in self.texture_labels:
                     w.destroy()
                     del self.texture_labels[w]
 
-            if getattr(box_frame, 'texture', ''):
-                # tile vertically to fill the height
-                # approximate line count from box height / font height
+            if texture_symbol:
+                # Apply texture overlay
                 font = ("Courier", 8)
-                # force an update to get actual height
                 inner.update_idletasks()
                 h = inner.winfo_height()
-                # rough line-height in pixels
                 line_h = inner.tk.call("font", "metrics", font, "-linespace") or 12
-                count = max(int(h / line_h) + 1, 5)
+                # Calculate enough lines to fill the entire height with some padding
+                count = max(int(h / line_h) + 2, 10)  # Add extra lines to ensure coverage
 
-                txt = "\n".join([getattr(box_frame, 'texture', '')] * count)
+                txt = "\n".join([texture_symbol] * count)
                 tex_label = tk.Label(
                     inner, text=txt,
                     bg=getattr(box_frame, 'bg_color', '#FFFFFF'),
@@ -356,10 +499,14 @@ class Sincus:
 
             win.destroy()
 
-        ok_btn = ttk.Button(win, text="OK", command=apply_and_close)
-        ok_btn.pack(side="right", padx=(0,10), pady=(0,10))
+        ok_btn = ttk.Button(buttons_frame, text="Appliquer", command=apply_and_close)
+        ok_btn.pack(side="right", padx=(5, 0))
 
-        # — Remove button —
+        # Cancel button
+        cancel_btn = ttk.Button(buttons_frame, text="Annuler", command=win.destroy)
+        cancel_btn.pack(side="right")
+
+        # Remove button
         def remove_and_close():
             # find & remove from the last page's list
             page = self.log_boxes[-1]
@@ -373,14 +520,37 @@ class Sincus:
                     break
             win.destroy()
 
-        remove_btn = ttk.Button(win, text="Remove Box", command=remove_and_close)
-        remove_btn.pack(side="left", padx=(10,0), pady=(0,10))
+        remove_btn = ttk.Button(buttons_frame, text="Supprimer", command=remove_and_close)
+        remove_btn.pack(side="left")
+
+        # Initialize preview
+        update_preview()
 
         # Center the popup
         win.update_idletasks()
         x = self.root.winfo_rootx() + 50
         y = self.root.winfo_rooty() + 50
         win.geometry(f"+{x}+{y}")
+
+    def get_geological_materials_mapping(self):
+        """Get the geological materials mapping for color/material name conversion"""
+        return {
+            "Grès / Sable": "#FFFF00",           # Jaune
+            "Argile / Argileux": "#00FF00",      # Vert
+            "Calcaire / Carbonaté": "#0000FF",   # Bleu
+            "Dolomie": "#FF69B4",                # Rose
+            "Siltite / Siltstone": "#D2B48C",    # Marron clair
+            "Conglomérat": "#FFA500",            # Orange
+            "Charbon": "#000000",                # Noir
+            "Évaporites (gypse, sel)": "#F5F5F5", # Blanc / Gris très clair
+            "Schiste (shale)": "#006400",        # Vert foncé
+            "Calcaire siliceux (chert)": "#8A2BE2" # Violet
+        }
+
+    def get_geological_materials_reverse_mapping(self):
+        """Get the reverse mapping from color to material name"""
+        materials = self.get_geological_materials_mapping()
+        return {color: name for name, color in materials.items()}
 
     def save_project(self):
         """Save the current project to a .sincus file"""
@@ -433,8 +603,18 @@ class Sincus:
             for page_log_boxes in self.log_boxes:
                 page_boxes_data = []
                 for box in page_log_boxes['boxes']:
+                    # Get material name from color
+                    bg_color = getattr(box['frame'], 'bg_color', '#FFFFFF')
+                    material_name = "Autre"
+                    
+                    # Use reverse mapping to get material name
+                    reverse_mapping = self.get_geological_materials_reverse_mapping()
+                    if bg_color in reverse_mapping:
+                        material_name = reverse_mapping[bg_color]
+                    
                     box_data = {
-                        'bg_color': getattr(box['frame'], 'bg_color', '#FFFFFF'),
+                        'bg_color': bg_color,
+                        'material_name': material_name,
                         'texture': getattr(box['frame'], 'texture', ''),
                         'height': box['frame'].winfo_height(),
                         'expandable': box.get('expandable', False)
@@ -508,13 +688,44 @@ class Sincus:
                     # Recreate boxes with saved data
                     for box_data in page_boxes_data:
                         new_box = self.create_log_box(page_log_boxes['container'])
-                        new_box['frame'].bg_color = box_data.get('bg_color', '#FFFFFF')
-                        new_box['frame'].texture = box_data.get('texture', '')
+                        bg_color = box_data.get('bg_color', '#FFFFFF')
+                        texture = box_data.get('texture', '')
+                        material_name = box_data.get('material_name', 'Autre')
+                        
+                        setattr(new_box['frame'], 'bg_color', bg_color)
+                        setattr(new_box['frame'], 'texture', texture)
                         new_box['frame'].place(relwidth=1, height=box_data.get('height', 50))
                         
                         # Update inner frame color
                         inner = new_box['frame'].winfo_children()[0]
-                        inner.config(bg=new_box['frame'].bg_color)
+                        inner.config(bg=bg_color)
+                        
+                        # Apply texture overlay if texture exists
+                        if texture:
+                            # Remove any existing texture overlay
+                            for w in inner.place_slaves():
+                                if w in self.texture_labels:
+                                    w.destroy()
+                                    del self.texture_labels[w]
+                            
+                            # Apply texture overlay
+                            font = ("Courier", 8)
+                            inner.update_idletasks()
+                            h = inner.winfo_height()
+                            line_h = inner.tk.call("font", "metrics", font, "-linespace") or 12
+                            # Calculate enough lines to fill the entire height with some padding
+                            count = max(int(h / line_h) + 2, 10)  # Add extra lines to ensure coverage
+
+                            txt = "\n".join([texture] * count)
+                            tex_label = tk.Label(
+                                inner, text=txt,
+                                bg=bg_color,
+                                font=font,
+                                bd=0, padx=0, pady=0,
+                                justify="left", anchor="nw"
+                            )
+                            self.texture_labels[tex_label] = True
+                            tex_label.place(relwidth=1, relheight=1)
                         
                         page_log_boxes['boxes'].append(new_box)
             
@@ -724,11 +935,12 @@ class Sincus:
                         bg_color = box_data.get('bg_color', '#FFFFFF')
                         texture = box_data.get('texture', '')
                         height = box_data.get('height', 50)
+                        material_name = box_data.get('material_name', 'Autre')
                         
                         setattr(new_box['frame'], 'bg_color', bg_color)
                         setattr(new_box['frame'], 'texture', texture)
                         
-                        print(f"    Properties set: bg_color={bg_color}, texture={texture}, height={height}")
+                        print(f"    Properties set: bg_color={bg_color}, material={material_name}, texture={texture}, height={height}")
                         print(f"    Positioning at y={y_offset}")
                         
                         # Place the box at the calculated y position
@@ -742,6 +954,37 @@ class Sincus:
                             print(f"    Inner frame color updated")
                         except Exception as e:
                             print(f"    WARNING: Could not update inner frame color: {e}")
+                        
+                        # Apply texture overlay if texture exists
+                        if texture:
+                            try:
+                                # Remove any existing texture overlay
+                                for w in inner.place_slaves():
+                                    if w in self.texture_labels:
+                                        w.destroy()
+                                        del self.texture_labels[w]
+                                
+                                # Apply texture overlay
+                                font = ("Courier", 8)
+                                inner.update_idletasks()
+                                h = inner.winfo_height()
+                                line_h = inner.tk.call("font", "metrics", font, "-linespace") or 12
+                                # Calculate enough lines to fill the entire height with some padding
+                                count = max(int(h / line_h) + 2, 10)  # Add extra lines to ensure coverage
+
+                                txt = "\n".join([texture] * count)
+                                tex_label = tk.Label(
+                                    inner, text=txt,
+                                    bg=bg_color,
+                                    font=font,
+                                    bd=0, padx=0, pady=0,
+                                    justify="left", anchor="nw"
+                                )
+                                self.texture_labels[tex_label] = True
+                                tex_label.place(relwidth=1, relheight=1)
+                                print(f"    Texture overlay applied")
+                            except Exception as e:
+                                print(f"    WARNING: Could not apply texture overlay: {e}")
                         
                         page_log_boxes['boxes'].append(new_box)
                         print(f"    Box {box_idx + 1} added to page")
@@ -836,5 +1079,46 @@ class Sincus:
         result = has_container and has_pages
         print(f"  App initialized: {result}")
         return result
+
+    def return_to_splash(self):
+        """Return to the splash screen"""
+        from tkinter import messagebox
+        response = messagebox.askyesno(
+            "Retour à l'accueil",
+            "Voulez-vous vraiment retourner à l'écran d'accueil ?\n\nTout travail non sauvegardé sera perdu.",
+            icon='warning'
+        )
+        if response:
+            # Clear the current app
+            for widget in self.root.winfo_children():
+                widget.destroy()
+            
+            # Reset grid configuration
+            for i in range(self.root.grid_size()[0]):
+                self.root.columnconfigure(i, weight=0)
+            for i in range(self.root.grid_size()[1]):
+                self.root.rowconfigure(i, weight=0)
+            
+            # Create new splash window
+            def on_splash_create(jwt_token=None):
+                from gui.project_info import ProjectInfoWindow
+                ProjectInfoWindow(self.root, start_main_app, jwt_token=jwt_token)
+            
+            def start_main_app(project_info, jwt_token=None):
+                from core.app import Sincus
+                # Update global token if provided
+                if jwt_token:
+                    from utils.auth_state import set_jwt_token_global
+                    set_jwt_token_global(jwt_token)
+                
+                # Destroy any existing widgets
+                for widget in self.root.winfo_children():
+                    widget.destroy()
+                
+                # Start main application with global JWT token
+                new_app = Sincus(self.root, project_info, get_jwt_token_global())
+            
+            from gui.splash import SplashWindow
+            SplashWindow(self.root, on_splash_create)
 
 

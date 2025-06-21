@@ -48,3 +48,33 @@ class Zone(db.Model):
     puits = db.Column(db.String(64), nullable=False)
     bloc = db.Column(db.String(64), nullable=False)
     permis = db.Column(db.String(64), nullable=False) 
+
+class ActivityLog(db.Model):
+    """Model for tracking user activities"""
+    __tablename__ = 'activity_logs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    user_email = db.Column(db.String(120), nullable=False)  # Store email for quick access
+    action = db.Column(db.String(200), nullable=False)  # e.g., "File Upload", "User Login", "File Share"
+    details = db.Column(db.Text)  # Additional details about the action
+    status = db.Column(db.String(50), nullable=False)  # "success", "error", "warning"
+    ip_address = db.Column(db.String(45))  # IPv4 or IPv6
+    user_agent = db.Column(db.String(500))  # Browser/client info
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationship
+    user = db.relationship('User', backref=db.backref('activity_logs', passive_deletes=True))
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'user_email': self.user_email,
+            'action': self.action,
+            'details': self.details,
+            'status': self.status,
+            'ip_address': self.ip_address,
+            'user_agent': self.user_agent,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        } 
