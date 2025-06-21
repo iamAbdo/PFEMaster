@@ -10,6 +10,7 @@ from PIL import Image, ImageTk
 import os
 from gui.settings_dialog import show_settings_dialog
 from core.app import Sincus
+from utils.auth_state import get_jwt_token_global, set_jwt_token_global
 
 class SplashWindow:
     def __init__(self, master, on_create_callback):
@@ -225,8 +226,8 @@ class SplashWindow:
                 self.master.rowconfigure(i, weight=0)
             
             print("Creating Sincus app...")
-            # Start main application with loaded project info
-            app = Sincus(self.master, project_info)
+            # Start main application with loaded project info and global JWT token
+            app = Sincus(self.master, project_info, get_jwt_token_global())
             print("Sincus app created successfully")
             
             # Load the saved data into the app after ensuring it's initialized
@@ -268,6 +269,8 @@ class SplashWindow:
                 self.is_admin = False
                 self.role = None
                 set_jwt_token(None)
+                # Also clear the global token
+                set_jwt_token_global(None)
                 if "Compte" in self.left_menu_labels:
                     self.left_menu_labels["Compte"].config(text="Log in")
                 messagebox.showinfo("Déconnexion", "Vous avez été déconnecté.")
@@ -325,6 +328,8 @@ class SplashWindow:
                     self.is_admin = data.get('is_admin', False)
                     self.role = data.get('role', None)
                     set_jwt_token(self.jwt_token)
+                    # Also set the global token for use across the application
+                    set_jwt_token_global(self.jwt_token)
                     if "Compte" in self.left_menu_labels:
                         self.left_menu_labels["Compte"].config(text="Compte")
                     messagebox.showinfo("Connecté", f"Connecté en tant que {email}.")

@@ -4,6 +4,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.utils import secure_filename
 import magic
 from .models import db, File, User
+from datetime import datetime
 # from .auth import require_cert
 
 user_bp = Blueprint('user', __name__)
@@ -26,7 +27,7 @@ def upload_file():
     user_id = int(get_jwt_identity())
     user_upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], str(user_id))
     os.makedirs(user_upload_dir, exist_ok=True)
-    filename = secure_filename(file.filename)
+    filename = secure_filename(file.filename or 'unknown.pdf')
     filepath = os.path.join(user_upload_dir, filename)
     file.save(filepath)
     if not allowed_file(filepath):
@@ -46,6 +47,59 @@ def upload_file():
         'message': 'File uploaded successfully',
         'filename': filename,
         'access_list': [user.email for user in new_file.users_with_access]
+    }), 201
+
+@user_bp.route('/files/export-pdf', methods=['POST'])
+@jwt_required()
+#@require_cert
+def export_pdf():
+    """Special endpoint for PDF exports from the frontend application"""
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    user_id = int(get_jwt_identity())
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    # Create user-specific upload directory
+    user_upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], str(user_id))
+    os.makedirs(user_upload_dir, exist_ok=True)
+    
+    # Generate filename with timestamp if not provided
+    if file.filename == 'export.pdf':
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"export_{timestamp}.pdf"
+    else:
+        filename = secure_filename(file.filename or 'export.pdf')
+    
+    filepath = os.path.join(user_upload_dir, filename)
+    file.save(filepath)
+    
+    # Verify it's a PDF
+    if not allowed_file(filepath):
+        os.remove(filepath)
+        return jsonify({'error': 'File must be a PDF'}), 400
+    
+    # Save to database
+    new_file = File(
+        filename=filename,
+        path=filepath,
+        owner_id=user_id
+    )
+    db.session.add(new_file)
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'PDF exported successfully',
+        'filename': filename,
+        'file_id': new_file.id,
+        'exported_at': new_file.created_at.isoformat(),
+        'user_email': user.email
     }), 201
 
 @user_bp.route('/files', methods=['GET'])

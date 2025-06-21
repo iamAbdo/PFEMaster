@@ -3,6 +3,7 @@ from tkinter import ttk
 from functions.new_page import add_new_page
 from utils.text_formatting import toggle_bold
 from functions.export_pdf import PDFExporter
+from utils.auth_state import get_jwt_token_global
 
 def setup_controls(app):
     control_frame = ttk.Frame(app.header_frame)
@@ -14,18 +15,17 @@ def setup_controls(app):
     # app.bold_btn.pack(side=tk.LEFT, padx=5)
     
 
-    ttk.Button(control_frame, text="Export PDF", 
-              command=lambda: PDFExporter(app).export(), 
-              style='Primary.TButton').pack(side=tk.LEFT, padx=5)
+    # Only show Export PDF button if user is logged in (using global token)
+    if get_jwt_token_global():
+        ttk.Button(control_frame, text="Export PDF", 
+                  command=lambda: PDFExporter(app).export(), 
+                  style='Primary.TButton').pack(side=tk.LEFT, padx=5)
     
     ttk.Button(control_frame, text="+ Add Log", command=lambda: app.add_log_box(), 
                style='Primary.TButton').pack(side=tk.LEFT, padx=5)
     
-    # Add save and load buttons
+    # Add save button only (removed Ouvrir button)
     ttk.Button(control_frame, text="Sauvegarder", command=lambda: app.save_project(), 
-               style='Primary.TButton').pack(side=tk.LEFT, padx=5)
-    
-    ttk.Button(control_frame, text="Ouvrir", command=lambda: app.load_project(), 
                style='Primary.TButton').pack(side=tk.LEFT, padx=5)
     
     # ttk.Button(

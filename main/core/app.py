@@ -8,9 +8,10 @@ from gui.canvas import setup_canvas
 from utils.styles import setup_styles
 from functions.new_page import add_new_page
 from reportlab.lib.pagesizes import A4
+from utils.auth_state import get_jwt_token_global
 
 class Sincus:
-    def __init__(self, root, project_info):
+    def __init__(self, root, project_info, jwt_token=None):
         a4_width, a4_height = A4
     
         self.a4_width = int(a4_width)
@@ -27,6 +28,9 @@ class Sincus:
         self.current_font = ("Arial", 12)
         self.root.taille = 12
         self.current_page = None
+        
+        # Store JWT token (use global if not provided)
+        self.jwt_token = jwt_token or get_jwt_token_global()
 
         # Status bar
         self.status_bar = ttk.Label(self.root, text="Total pages: 0", style='Status.TLabel')
@@ -186,8 +190,9 @@ class Sincus:
         self.root.taille = taille
         if self.current_page and isinstance(self.current_page, list):
             for text_widget in self.current_page:
-                text_widget.configure(font=('Arial', self.root.taille))
-                text_widget.tag_configure("bold", font=('Arial', self.root.taille, 'bold'))
+                if hasattr(text_widget, 'configure'):
+                    text_widget.configure(font=('Arial', self.root.taille))
+                    text_widget.tag_configure("bold", font=('Arial', self.root.taille, 'bold'))
 
     def configure_tags(self):
         # Initialize bold tag for all existing text widgets
@@ -203,8 +208,8 @@ class Sincus:
         """
         box_frame = ttk.Frame(parent, style='LogBox.TFrame')
         # default state
-        box_frame.bg_color = "#FFFFFF"
-        box_frame.texture = ""  
+        setattr(box_frame, 'bg_color', "#FFFFFF")
+        setattr(box_frame, 'texture', "")
 
         # pack/draw as before…
         inner = tk.Frame(box_frame, bg=box_frame.bg_color, bd=1, relief="solid")
@@ -226,12 +231,12 @@ class Sincus:
             max_h = self._log_max_height
 
             def start_resize(e):
-                handle._start_y = e.y_root
-                handle._start_h = box_frame.winfo_height()
+                setattr(handle, '_start_y', e.y_root)
+                setattr(handle, '_start_h', box_frame.winfo_height())
 
             def do_resize(e):
-                dy = e.y_root - handle._start_y
-                new_h = handle._start_h + dy
+                dy = e.y_root - getattr(handle, '_start_y', 0)
+                new_h = getattr(handle, '_start_h', 0) + dy
                 new_h = max(min_h, min(max_h, new_h))
                 box_frame.place_configure(height=new_h)
 
@@ -246,9 +251,22 @@ class Sincus:
         then appends & places a fresh one.
         """
         if not self.log_boxes:
+            print("WARNING: No log boxes structure found")
             return
 
         page_data = self.log_boxes[-1]
+        
+        # Check if container is valid
+        if not page_data.get("container"):
+            print("WARNING: No container found for current page")
+            return
+            
+        try:
+            # Test if container is still valid
+            page_data["container"].winfo_exists()
+        except Exception as e:
+            print(f"ERROR: Container is invalid: {e}")
+            return
 
         # freeze old expandable
         cur = page_data["current_expandable"]
@@ -284,18 +302,18 @@ class Sincus:
 
         # — Color chooser —
         def pick_color():
-            c = colorchooser.askcolor(initialcolor=box_frame.bg_color, parent=win)
+            c = colorchooser.askcolor(initialcolor=getattr(box_frame, 'bg_color', '#FFFFFF'), parent=win)
             if c and c[1]:
-                box_frame.bg_color = c[1]
+                setattr(box_frame, 'bg_color', c[1])
                 inner = box_frame.winfo_children()[0]
-                inner.config(bg=box_frame.bg_color)
+                inner.config(bg=c[1])
 
         ttk.Button(win, text="Choose Color…", command=pick_color)\
             .pack(fill="x", padx=10, pady=(10,5))
 
         # — Texture dropdown —
         textures = ["++++", "-----", "//////", "-+-+-+-+", "--.--."]
-        tex_var = tk.StringVar(value=box_frame.texture)
+        tex_var = tk.StringVar(value=getattr(box_frame, 'texture', ''))
         ttk.Label(win, text="Texture:").pack(anchor="w", padx=10)
         combo = ttk.Combobox(
             win, textvariable=tex_var,
@@ -305,7 +323,7 @@ class Sincus:
 
         # — Apply (OK) —
         def apply_and_close():
-            box_frame.texture = tex_var.get()
+            setattr(box_frame, 'texture', tex_var.get())
             inner = box_frame.winfo_children()[0]
 
             # remove old texture overlay
@@ -314,7 +332,7 @@ class Sincus:
                     w.destroy()
                     del self.texture_labels[w]
 
-            if box_frame.texture:
+            if getattr(box_frame, 'texture', ''):
                 # tile vertically to fill the height
                 # approximate line count from box height / font height
                 font = ("Courier", 8)
@@ -325,10 +343,10 @@ class Sincus:
                 line_h = inner.tk.call("font", "metrics", font, "-linespace") or 12
                 count = max(int(h / line_h) + 1, 5)
 
-                txt = "\n".join([box_frame.texture] * count)
+                txt = "\n".join([getattr(box_frame, 'texture', '')] * count)
                 tex_label = tk.Label(
                     inner, text=txt,
-                    bg=box_frame.bg_color,
+                    bg=getattr(box_frame, 'bg_color', '#FFFFFF'),
                     font=font,
                     bd=0, padx=0, pady=0,
                     justify="left", anchor="nw"
@@ -606,23 +624,46 @@ class Sincus:
             if not self.log_boxes:
                 print("WARNING: No log boxes found, but we have log boxes data to load")
                 print("This might happen if pages were created but log boxes weren't initialized")
-                print("Attempting to load log boxes data anyway...")
+                print("Attempting to recreate log boxes structure...")
                 
-                # Try to load log boxes data even if self.log_boxes is empty
-                # This can happen if the container was recreated
+                # Recreate log boxes structure for existing pages
                 if log_boxes_data and len(self.pages) > 0:
-                    print("Creating log boxes structure for existing pages...")
+                    print("Recreating log boxes structure for existing pages...")
                     for page_idx in range(len(self.pages)):
                         if page_idx < len(log_boxes_data):
-                            # We need to find the log container for this page
-                            # This is a bit tricky since we need to access the page structure
-                            print(f"Looking for log container in page {page_idx + 1}...")
-                            # For now, let's just show a message that log boxes couldn't be loaded
-                            print(f"Log boxes data available for page {page_idx + 1}: {len(log_boxes_data[page_idx])} boxes")
+                            print(f"Recreating log boxes structure for page {page_idx + 1}...")
+                            try:
+                                # Get the page frame from the container
+                                if self.container is None:
+                                    raise Exception("Container is None")
+                                page_frame = self.container.winfo_children()[page_idx]
+                                # Find the log container (second column, index 1)
+                                log_container = page_frame.winfo_children()[1].winfo_children()[1]
+                                
+                                # Create log boxes structure for this page
+                                self.log_boxes.append({
+                                    'container': log_container,
+                                    'boxes': [],
+                                    'current_expandable': None
+                                })
+                                print(f"Log boxes structure created for page {page_idx + 1}")
+                            except Exception as e:
+                                print(f"ERROR creating log boxes structure for page {page_idx + 1}: {e}")
+                                # Create empty structure as fallback
+                                self.log_boxes.append({
+                                    'container': None,
+                                    'boxes': [],
+                                    'current_expandable': None
+                                })
+                        else:
+                            # Create empty structure for pages without log boxes data
+                            self.log_boxes.append({
+                                'container': None,
+                                'boxes': [],
+                                'current_expandable': None
+                            })
                 
-                self.status_bar.config(text=f"Total pages: {len(self.pages)}")
-                messagebox.showinfo("Succès", "Projet chargé avec succès! (sans log boxes - conteneur recréé)")
-                return
+                print(f"Recreated log boxes structure with {len(self.log_boxes)} entries")
             
             print(f"Current log_boxes structure: {len(self.log_boxes)} entries")
             
@@ -674,17 +715,18 @@ class Sincus:
                     try:
                         print(f"  Creating box {box_idx + 1}...")
                         
-                        # Create new box
-                        new_box = self.create_log_box(container)
-                        print(f"    Box created successfully")
+                        # Create new box - make all boxes non-expandable initially
+                        is_last_box = (box_idx == len(page_boxes_data) - 1)
+                        new_box = self.create_log_box(container, is_expandable=is_last_box)
+                        print(f"    Box created successfully (expandable: {is_last_box})")
                         
                         # Set properties
                         bg_color = box_data.get('bg_color', '#FFFFFF')
                         texture = box_data.get('texture', '')
-                        height = box_data.get('height', 50) + 4
+                        height = box_data.get('height', 50)
                         
-                        new_box['frame'].bg_color = bg_color
-                        new_box['frame'].texture = texture
+                        setattr(new_box['frame'], 'bg_color', bg_color)
+                        setattr(new_box['frame'], 'texture', texture)
                         
                         print(f"    Properties set: bg_color={bg_color}, texture={texture}, height={height}")
                         print(f"    Positioning at y={y_offset}")
@@ -704,8 +746,8 @@ class Sincus:
                         page_log_boxes['boxes'].append(new_box)
                         print(f"    Box {box_idx + 1} added to page")
                         
-                        # Calculate y position for next box (no spacing)
-                        y_offset += height - 5
+                        # Calculate y position for next box
+                        y_offset += height
                         print(f"    Next box will start at y={y_offset}")
                         
                     except Exception as e:
@@ -713,6 +755,14 @@ class Sincus:
                         import traceback
                         traceback.print_exc()
                         continue
+                
+                # Set the current_expandable to the last box created (if any boxes were created)
+                if page_log_boxes['boxes']:
+                    page_log_boxes['current_expandable'] = page_log_boxes['boxes'][-1]
+                    print(f"Set current_expandable to last box for page {page_idx}")
+                else:
+                    page_log_boxes['current_expandable'] = None
+                    print(f"No boxes created for page {page_idx}, current_expandable set to None")
                 
                 print(f"Page {page_idx} log boxes processing completed")
             

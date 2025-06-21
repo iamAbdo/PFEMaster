@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 import requests
+from utils.auth_state import get_jwt_token_global
 
 class ProjectInfoWindow:
     def __init__(self, master, on_submit_callback, jwt_token=None):
@@ -88,14 +89,19 @@ class ProjectInfoWindow:
 
     def fetch_zones(self):
         try:
-            headers = {'Authorization': f'Bearer {self.jwt_token}'}
-            resp = requests.get('https://127.0.0.1:5000/api/zone/zones', headers=headers, verify=False)
-            if resp.status_code == 200:
-                zones = resp.json().get('zones', [])
-                if zones is None:
-                    self.zones = []
+            # Use global JWT token if available, otherwise use instance token
+            token = get_jwt_token_global() or self.jwt_token
+            if token:
+                headers = {'Authorization': f'Bearer {token}'}
+                resp = requests.get('https://127.0.0.1:5000/api/zone/zones', headers=headers, verify=False)
+                if resp.status_code == 200:
+                    zones = resp.json().get('zones', [])
+                    if zones is None:
+                        self.zones = []
+                    else:
+                        self.zones = zones
                 else:
-                    self.zones = zones
+                    self.zones = []
             else:
                 self.zones = []
             self.create_form()
@@ -240,7 +246,8 @@ class ProjectInfoWindow:
         project_info["carotte_summary"] = self.carotte_text.get("1.0", tk.END).strip()
         self.master.resizable(True, True)
         self.form_frame.destroy()
-        self.on_submit(project_info)
+        # Pass both project_info and global JWT token to the callback
+        self.on_submit(project_info, get_jwt_token_global())
 
     def on_cancel(self):
         """Handle cancel button click - go back to splash screen"""

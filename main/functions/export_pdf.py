@@ -6,9 +6,14 @@ from reportlab.lib.enums import TA_CENTER
 from pathlib import Path 
 from reportlab.platypus import Table, TableStyle, Image, Paragraph, KeepTogether
 import os
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 from utils.pdf_helpers import RotatedText
 import tkinter as tk
+import requests
+import json
+from utils.settings import get_settings_file
+from utils.auth_state import get_jwt_token_global
+from datetime import datetime
 
 
 class PDFExporter:
@@ -18,7 +23,105 @@ class PDFExporter:
         self.a4_width, self.a4_height = A4
 
     def export(self):
-        """Main export method"""
+        """Main export method with backend integration"""
+        # Load settings to get save directory
+        settings_path = get_settings_file()
+        settings = {}
+        if settings_path.exists():
+            try:
+                with open(settings_path, 'r', encoding='utf-8') as f:
+                    settings = json.load(f)
+            except Exception:
+                pass
+        
+        save_dir = settings.get('save_dir', str(Path.home() / 'Documents'))
+        
+        # Generate filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        default_filename = f"export_{timestamp}.pdf"
+        
+        # Create the PDF in memory first
+        pdf_data = self._create_pdf_in_memory()
+        
+        if not pdf_data:
+            return
+        
+        # Save to local directory from settings
+        local_path = Path(save_dir) / default_filename
+        try:
+            with open(local_path, 'wb') as f:
+                f.write(pdf_data)
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Impossible de sauvegarder le fichier localement : {e}")
+            return
+        
+        # Send to backend
+        success = self._send_to_backend(pdf_data, default_filename)
+        
+        if success:
+            messagebox.showinfo("Succès", f"PDF exporté avec succès!\nSauvegardé dans : {local_path}")
+        else:
+            messagebox.showwarning("Attention", f"PDF sauvegardé localement mais erreur lors de l'envoi au serveur.\nFichier : {local_path}")
+
+    def _create_pdf_in_memory(self):
+        """Create PDF in memory and return the bytes"""
+        try:
+            from io import BytesIO
+            buffer = BytesIO()
+            
+            pdf = pdf_canvas.Canvas(buffer, pagesize=(self.a4_width, self.a4_height))
+            margin = 40
+            line_height = self.app.root.taille + 2
+
+            for page_num, page in enumerate(self.app.pages):
+                pdf.setPageSize((self.a4_width, self.a4_height))
+                self._current_page_index = page_num
+                y_position = self.a4_height - margin
+
+                y_position = self._draw_header(pdf, y_position, margin)
+                pdf.showPage()
+
+            pdf.setPageSize((self.a4_width, self.a4_height))
+            pdf.showPage()
+            pdf.save()
+            
+            return buffer.getvalue()
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Erreur lors de la création du PDF : {e}")
+            return None
+
+    def _send_to_backend(self, pdf_data, filename):
+        """Send PDF to backend"""
+        try:
+            token = get_jwt_token_global()
+            if not token:
+                return False
+            
+            # Prepare the file for upload
+            from io import BytesIO
+            files = {'file': (filename, BytesIO(pdf_data), 'application/pdf')}
+            headers = {'Authorization': f'Bearer {token}'}
+            
+            # Send to backend using the export-pdf endpoint
+            response = requests.post(
+                'https://localhost:5000/api/user/files/export-pdf',
+                files=files,
+                headers=headers,
+                verify=False  # For self-signed certificate
+            )
+            
+            if response.status_code == 201:
+                return True
+            else:
+                print(f"Backend error: {response.status_code} - {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"Error sending to backend: {e}")
+            return False
+
+    def export_legacy(self):
+        """Legacy export method with file dialog"""
         file_path = filedialog.asksaveasfilename(
             defaultextension=".pdf",
             filetypes=[("PDF Files", "*.pdf")]
