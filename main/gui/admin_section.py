@@ -5,6 +5,7 @@ from tkinter import ttk
 from core import crypto
 import requests
 from .user_management_dialog import show_create_user_dialog
+from .file_sharing_dialog import show_file_sharing_dialog
 import os
 from PIL import Image, ImageTk
 
@@ -48,6 +49,302 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
         for w in (btn, icon_label, txt_label):
             w.bind("<Button-1>", lambda e: command())
         return btn
+
+    def handle_file_access_management():
+        """Handle file access management for all PDFs"""
+        try:
+            headers = {}
+            if jwt_token_global:
+                headers['Authorization'] = f'Bearer {jwt_token_global}'
+            
+            # Get all files in the system (admin endpoint)
+            response = requests.get(
+                'https://127.0.0.1:5000/api/user/admin/files',
+                headers=headers,
+                verify=False
+            )
+            
+            if response.status_code != 200:
+                messagebox.showerror(
+                    "Erreur",
+                    f"Erreur lors de la récupération des fichiers: {response.text}"
+                )
+                return
+
+            files_data = response.json()
+            all_files = files_data.get('files', [])
+            
+            if not all_files:
+                messagebox.showinfo("Information", "Aucun fichier PDF trouvé")
+                return
+
+            # Create file management window
+            win = tk.Toplevel()
+            win.title("Gestion d'accès aux fichiers")
+            win.geometry("800x500")  # Reduced from 900x600
+            win.configure(bg='#f0f0f0')
+            win.resizable(True, True)  # Make window resizable
+            win.minsize(700, 400)  # Set minimum size
+
+            # Main container
+            main_frame = tk.Frame(win, bg='#f0f0f0')
+            main_frame.pack(fill='both', expand=True, padx=20, pady=20)
+
+            # Header
+            header_frame = tk.Frame(main_frame, bg='#f0f0f0')
+            header_frame.pack(fill='x', pady=(0, 20))
+
+            tk.Label(
+                header_frame,
+                text="Gestion d'accès aux fichiers PDF",
+                font=("Arial", 16, "bold"),
+                bg='#f0f0f0'
+            ).pack(side='left')
+
+            # Style the Treeview
+            style = ttk.Style(win)
+            style.configure(
+                "File.Treeview",
+                rowheight=32,
+                font=('Arial', 11),
+                fieldbackground='white',
+                bordercolor='#ccc',
+                borderwidth=1
+            )
+            style.configure(
+                "File.Treeview.Heading",
+                font=('Arial', 12, 'bold'),
+                relief='flat'
+            )
+            style.layout("File.Treeview", [
+                ('File.Treeview.treearea', {'sticky': 'nswe'})
+            ])
+
+            # Create treeview
+            tree = Treeview(
+                main_frame,
+                style="File.Treeview",
+                columns=('filename', 'type', 'created_at', 'owner', 'actions'),
+                show='headings',
+                height=15
+            )
+            
+            tree.heading('filename', text='Nom du fichier')
+            tree.heading('type', text='Type')
+            tree.heading('created_at', text='Date de création')
+            tree.heading('owner', text='Propriétaire')
+            tree.heading('actions', text='Actions')
+            
+            tree.column('filename', width=200, anchor='w')
+            tree.column('type', width=80, anchor='center')
+            tree.column('created_at', width=100, anchor='center')
+            tree.column('owner', width=120, anchor='center')
+            tree.column('actions', width=150, anchor='center')
+
+            tree.tag_configure('evenrow', background='#f9f9f9')
+            tree.tag_configure('oddrow', background='#ffffff')
+
+            # Scrollbar
+            scrollbar = tk.Scrollbar(
+                main_frame,
+                orient='vertical',
+                command=tree.yview
+            )
+            tree.configure(yscrollcommand=scrollbar.set)
+            tree.pack(side='left', fill='both', expand=True)
+            scrollbar.pack(side='right', fill='y')
+
+            # Populate treeview
+            file_data_dict = {}  # Dictionary to store file data by item ID
+            for idx, file in enumerate(all_files):
+                tag = 'evenrow' if idx % 2 == 0 else 'oddrow'
+                file_type = "Propriétaire" if file.get('is_owner', False) else "Partagé"
+                created_date = file.get('created_at', '').split('T')[0] if file.get('created_at') else ''
+                owner = file.get('owner', 'Vous') if not file.get('is_owner', False) else 'Vous'
+                
+                item_id = tree.insert(
+                    '',
+                    'end',
+                    values=(
+                        file.get('filename', ''),
+                        file_type,
+                        created_date,
+                        owner,
+                        ''  # placeholder for buttons
+                    ),
+                    tags=(tag,)
+                )
+                file_data_dict[item_id] = file
+
+            def download_file(file_id, filename):
+                """Download a file"""
+                try:
+                    response = requests.get(
+                        f'https://127.0.0.1:5000/api/user/files/{file_id}/download',
+                        headers=headers,
+                        verify=False
+                    )
+                    
+                    if response.status_code == 200:
+                        save_path = filedialog.asksaveasfilename(
+                            title="Enregistrer le fichier",
+                            defaultextension=".pdf"
+                        )
+                        
+                        if save_path:
+                            with open(save_path, 'wb') as f:
+                                f.write(response.content)
+                            messagebox.showinfo("Succès", f"Fichier téléchargé: {os.path.basename(save_path)}")
+                    else:
+                        messagebox.showerror("Erreur", "Impossible de télécharger le fichier")
+                        
+                except Exception as e:
+                    messagebox.showerror("Erreur", f"Erreur lors du téléchargement: {str(e)}")
+
+            def delete_file(file_id, filename):
+                """Delete a file"""
+                result = messagebox.askyesno("Confirmation", 
+                                           f"Êtes-vous sûr de vouloir supprimer le fichier {filename}?")
+                if not result:
+                    return
+                
+                try:
+                    response = requests.delete(
+                        f'https://127.0.0.1:5000/api/user/files/{file_id}',
+                        headers=headers,
+                        verify=False
+                    )
+                    
+                    if response.status_code == 200:
+                        messagebox.showinfo("Succès", "Fichier supprimé avec succès!")
+                        refresh_files_table()
+                    else:
+                        error_message = response.json().get('error', 'Erreur inconnue')
+                        messagebox.showerror("Erreur", error_message)
+                        
+                except Exception as e:
+                    messagebox.showerror("Erreur", f"Impossible de supprimer le fichier: {e}")
+
+            def share_file(file_data):
+                """Share a file"""
+                show_file_sharing_dialog(win, file_data)
+
+            def refresh_files_table():
+                """Refresh the files table"""
+                for item in tree.get_children():
+                    tree.delete(item)
+                
+                file_data_dict.clear()  # Clear the dictionary
+                
+                try:
+                    response = requests.get(
+                        'https://127.0.0.1:5000/api/user/admin/files',
+                        headers=headers,
+                        verify=False
+                    )
+                    
+                    if response.status_code == 200:
+                        files_data = response.json()
+                        all_files = files_data.get('files', [])
+                        
+                        for idx, file in enumerate(all_files):
+                            tag = 'evenrow' if idx % 2 == 0 else 'oddrow'
+                            file_type = "Propriétaire" if file.get('is_owner', False) else "Partagé"
+                            created_date = file.get('created_at', '').split('T')[0] if file.get('created_at') else ''
+                            owner = file.get('owner', 'Vous') if not file.get('is_owner', False) else 'Vous'
+                            
+                            item_id = tree.insert(
+                                '',
+                                'end',
+                                values=(
+                                    file.get('filename', ''),
+                                    file_type,
+                                    created_date,
+                                    owner,
+                                    ''
+                                ),
+                                tags=(tag,)
+                            )
+                            file_data_dict[item_id] = file
+                        
+                        # Re-add buttons after refresh
+                        win.after(100, add_action_buttons)
+                        
+                except Exception as e:
+                    messagebox.showerror("Erreur", f"Impossible de rafraîchir les données: {e}")
+
+            def add_action_buttons():
+                """Add action buttons to each row"""
+                for item in tree.get_children():
+                    file_data = file_data_dict.get(item)
+                    if not file_data:
+                        continue
+                        
+                    file_id = file_data.get('id')
+                    filename = file_data.get('filename', '')
+                    
+                    bbox = tree.bbox(item, 'actions')
+                    if not bbox:
+                        continue
+                    
+                    x, y, width, height = bbox
+                    
+                    # Download button (always available for admin)
+                    download_btn = tk.Button(
+                        tree,
+                        text="Télécharger",
+                        bg='#3498db',
+                        fg='white',
+                        font=('Arial', 7),
+                        relief='flat',
+                        command=lambda fid=file_id, fn=filename: download_file(fid, fn)
+                    )
+                    download_btn.place(
+                        x=x + 2,
+                        y=y + (height-18)//2,
+                        width=60,
+                        height=18
+                    )
+                    
+                    # Share button (admin can share any file)
+                    share_btn = tk.Button(
+                        tree,
+                        text="Partager",
+                        bg='#27ae60',
+                        fg='white',
+                        font=('Arial', 7),
+                        relief='flat',
+                        command=lambda fd=file_data: share_file(fd)
+                    )
+                    share_btn.place(
+                        x=x + 65,
+                        y=y + (height-18)//2,
+                        width=50,
+                        height=18
+                    )
+                    
+                    # Delete button (admin can delete any file)
+                    delete_btn = tk.Button(
+                        tree,
+                        text="Supprimer",
+                        bg='#e74c3c',
+                        fg='white',
+                        font=('Arial', 7),
+                        relief='flat',
+                        command=lambda fid=file_id, fn=filename: delete_file(fid, fn)
+                    )
+                    delete_btn.place(
+                        x=x + 118,
+                        y=y + (height-18)//2,
+                        width=50,
+                        height=18
+                    )
+
+            # Add buttons after tree is populated
+            win.after(100, add_action_buttons)
+
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Impossible de contacter le backend: {e}")
 
     def refresh_users_table(tree):
         """Refresh the users table with latest data"""
@@ -119,8 +416,10 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
             users = response.json().get('users', [])
             win = tk.Toplevel()
             win.title("Gestion des utilisateurs")
-            win.geometry("800x500")
+            win.geometry("700x450")  # Reduced from 800x500
             win.configure(bg='#f0f0f0')
+            win.resizable(True, True)  # Make resizable
+            win.minsize(600, 350)  # Set minimum size
 
             # Main container
             main_frame = tk.Frame(win, bg='#f0f0f0')
@@ -186,9 +485,9 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
             tree.heading('actions', text='Actions')
             # column widths
             # tree.column('id', width=80, anchor='center')
-            tree.column('email', width=300, anchor='w')
-            tree.column('role', width=120, anchor='center')
-            tree.column('actions', width=100, anchor='center')
+            tree.column('email', width=250, anchor='w')  # Reduced from 300
+            tree.column('role', width=100, anchor='center')  # Reduced from 120
+            tree.column('actions', width=80, anchor='center')  # Reduced from 100
 
             # striped rows
             tree.tag_configure('evenrow', background='#f9f9f9')
@@ -232,18 +531,17 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
                         text="Supprimer",
                         bg='#e74c3c',
                         fg='white',
-                        font=('Arial', 9),
+                        font=('Arial', 8),
                         relief='flat',
-                        padx=5,
-                        pady=2,
+                        padx=3,
+                        pady=1,
                         command=lambda uid=user_id, email=user_email: delete_user(uid, email, tree)
                     )
-                    # shrink to fit the rowheight
                     btn.place(
-                        x=x + (width-70)//2,
-                        y=y + (height-20)//2,
-                        width=70,
-                        height=20
+                        x=x + (width-60)//2,
+                        y=y + (height-18)//2,
+                        width=60,
+                        height=18
                     )
 
             # give the tree time to render before placing buttons
@@ -272,8 +570,10 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
             zones = response.json().get('zones', [])
             win = tk.Toplevel()
             win.title("Gestion des zones")
-            win.geometry("800x500")
+            win.geometry("700x450")  # Reduced from 800x500
             win.configure(bg='#f0f0f0')
+            win.resizable(True, True)  # Make resizable
+            win.minsize(600, 350)  # Set minimum size
 
             main_frame = tk.Frame(win, bg='#f0f0f0')
             main_frame.pack(fill='both', expand=True, padx=20, pady=20)
@@ -369,11 +669,11 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
             tree.heading('bloc', text='Bloc')
             tree.heading('permis', text='Permis')
             tree.heading('actions', text='Actions')
-            tree.column('sigle', width=120, anchor='center')
-            tree.column('puits', width=120, anchor='center')
-            tree.column('bloc', width=120, anchor='center')
-            tree.column('permis', width=120, anchor='center')
-            tree.column('actions', width=100, anchor='center')
+            tree.column('sigle', width=100, anchor='center')  # Reduced from 120
+            tree.column('puits', width=100, anchor='center')  # Reduced from 120
+            tree.column('bloc', width=100, anchor='center')   # Reduced from 120
+            tree.column('permis', width=100, anchor='center') # Reduced from 120
+            tree.column('actions', width=80, anchor='center') # Reduced from 100
 
             tree.tag_configure('evenrow', background='#f9f9f9')
             tree.tag_configure('oddrow', background='#ffffff')
@@ -489,17 +789,17 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
                         text="Supprimer",
                         bg='#e74c3c',
                         fg='white',
-                        font=('Arial', 9),
+                        font=('Arial', 8),
                         relief='flat',
-                        padx=5,
-                        pady=2,
+                        padx=3,
+                        pady=1,
                         command=lambda s=sigle, p=puits, b=bloc, pm=permis: delete_zone(s, p, b, pm)
                     )
                     btn.place(
-                        x=x + (width-70)//2,
-                        y=y + (height-20)//2,
-                        width=70,
-                        height=20
+                        x=x + (width-60)//2,
+                        y=y + (height-18)//2,
+                        width=60,
+                        height=18
                     )
 
             win.after(100, add_delete_buttons)
@@ -515,4 +815,6 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
         dec_btn = make_btn(frame, "Gestions des zones", "🌐", handle_2)
         dec_btn.grid(row=0, column=0, padx=(0, 10))
         enc_btn = make_btn(frame, "Gestions d'utilisateurs", "👤", handle_1)
-        enc_btn.grid(row=0, column=1)
+        enc_btn.grid(row=0, column=1, padx=(0, 10))
+        access_btn = make_btn(frame, "Gestion d'accès", "🔐", handle_file_access_management)
+        access_btn.grid(row=0, column=2)
