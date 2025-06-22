@@ -309,24 +309,61 @@ class SplashWindow:
             login_win.title("Connexion")
             login_win.transient(self.master)
             login_win.grab_set()
+            login_win.resizable(False, False)
+            
+            # Configure grid weights for better layout
+            login_win.columnconfigure(1, weight=1)
+            
             email_var = tk.StringVar()
             pwd_var = tk.StringVar()
-            tk.Label(login_win, text="Email :", anchor='w').grid(row=0, column=0, padx=10, pady=(10, 5), sticky='w')
-            email_entry = tk.Entry(login_win, textvariable=email_var)
-            email_entry.grid(row=0, column=1, padx=10, pady=(10, 5))
-            tk.Label(login_win, text="Mot de passe :", anchor='w').grid(row=1, column=0, padx=10, pady=5, sticky='w')
-            pwd_entry = tk.Entry(login_win, textvariable=pwd_var, show="*")
-            pwd_entry.grid(row=1, column=1, padx=10, pady=5)
+            
+            # Title label
+            title_label = tk.Label(login_win, text="Connexion à l'application", font=("Arial", 12, "bold"))
+            title_label.grid(row=0, column=0, columnspan=2, padx=20, pady=(20, 15), sticky='ew')
+            
+            # Email section with better label
+            email_label = tk.Label(login_win, text="Adresse email :", font=("Arial", 10), anchor='w')
+            email_label.grid(row=1, column=0, padx=(20, 10), pady=(0, 5), sticky='w')
+            email_entry = tk.Entry(login_win, textvariable=email_var, width=30, font=("Arial", 10))
+            email_entry.grid(row=1, column=1, padx=(0, 20), pady=(0, 5), sticky='ew')
+            
+            # Password section with better label
+            pwd_label = tk.Label(login_win, text="Mot de passe :", font=("Arial", 10), anchor='w')
+            pwd_label.grid(row=2, column=0, padx=(20, 10), pady=(0, 5), sticky='w')
+            pwd_entry = tk.Entry(login_win, textvariable=pwd_var, show="*", width=30, font=("Arial", 10))
+            pwd_entry.grid(row=2, column=1, padx=(0, 20), pady=(0, 5), sticky='ew')
+            
+            # Button frame
             btn_frame = tk.Frame(login_win)
-            btn_frame.grid(row=2, column=0, columnspan=2, pady=(5, 10))
+            btn_frame.grid(row=3, column=0, columnspan=2, pady=(15, 20))
+            
             def on_ok():
                 login_win.destroy()
+                
             def on_cancel():
                 email_var.set('')
                 pwd_var.set('')
                 login_win.destroy()
-            tk.Button(btn_frame, text="OK", width=8, command=on_ok).pack(side='left', padx=5)
-            tk.Button(btn_frame, text="Annuler", width=8, command=on_cancel).pack(side='left', padx=5)
+                
+            def on_enter(event):
+                on_ok()
+            
+            # Colored buttons
+            ok_btn = tk.Button(btn_frame, text="Se connecter", width=12, command=on_ok, 
+                              bg="#4CAF50", fg="white", font=("Arial", 10, "bold"),
+                              relief="flat", padx=15, pady=5)
+            ok_btn.pack(side='left', padx=5)
+            
+            cancel_btn = tk.Button(btn_frame, text="Annuler", width=12, command=on_cancel,
+                                  bg="#f44336", fg="white", font=("Arial", 10, "bold"),
+                                  relief="flat", padx=15, pady=5)
+            cancel_btn.pack(side='left', padx=5)
+            
+            # Bind Enter key to confirm
+            email_entry.bind("<Return>", on_enter)
+            pwd_entry.bind("<Return>", on_enter)
+            
+            # Center the window
             login_win.update_idletasks()
             win_w = login_win.winfo_width()
             win_h = login_win.winfo_height()
@@ -335,7 +372,11 @@ class SplashWindow:
             x = (screen_w // 2) - (win_w // 2)
             y = (screen_h // 2) - (win_h // 2)
             login_win.geometry(f"{win_w}x{win_h}+{x}+{y}")
+            
+            # Set focus to email entry
             email_entry.focus_set()
+            
+            # Wait for window to close
             self.master.wait_window(login_win)
             email = email_var.get().strip()
             password = pwd_var.get()
