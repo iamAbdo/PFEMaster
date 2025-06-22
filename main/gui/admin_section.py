@@ -26,9 +26,9 @@ def create_admin_section(parent, button_size, jwt_token=None, role=None):
     
     # Label and divider
     label = tk.Label(parent, text="Gestion", font=('Arial', 14))
-    label.grid(row=7, column=0, sticky="w", pady=(30, 5))
+    label.grid(row=7, column=0, sticky="w", pady=(10, 2))
     hr = tk.Frame(parent, height=2, bg='black')
-    hr.grid(row=8, column=0, sticky='ew', pady=(0, 10))
+    hr.grid(row=8, column=0, sticky='ew', pady=(0, 4))
 
     # Container for buttons
     frame = tk.Frame(parent)

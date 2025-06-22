@@ -9,9 +9,9 @@ import requests
 def create_crypto_section(parent, button_size):
     # Label and divider
     label = tk.Label(parent, text="Cryptographie", font=("Arial", 14))
-    label.grid(row=3, column=0, sticky="w", pady=(30, 5))
+    label.grid(row=3, column=0, sticky="w", pady=(15, 5))
     hr = ttk.Separator(parent, orient='horizontal')
-    hr.grid(row=4, column=0, sticky='ew', pady=(0, 10))
+    hr.grid(row=4, column=0, sticky='ew', pady=(0, 4))
 
     # Container for buttons
     frame = ttk.Frame(parent)

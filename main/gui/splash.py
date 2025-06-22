@@ -130,35 +130,41 @@ class SplashWindow:
         right_container = ttk.Frame(self.master, padding=(20,10,10,10))
         right_container.grid(row=1, column=1, sticky='nsew')
         right_container.columnconfigure(0, weight=1)
-        # --- SCROLLBAR LOGIC ---
-        screen_h = self.master.winfo_screenheight()
-        min_height_needed = int(screen_h * 0.55)  # estimate needed height for all content
-        use_scroll = screen_h < min_height_needed
-        if use_scroll:
-            canvas = tk.Canvas(right_container, borderwidth=0, highlightthickness=0)
-            vscroll = ttk.Scrollbar(right_container, orient="vertical", command=canvas.yview)
-            scroll_frame = ttk.Frame(canvas)
-            scroll_frame.bind(
-                "<Configure>",
-                lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-            )
-            canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
-            canvas.configure(yscrollcommand=vscroll.set)
-            canvas.grid(row=0, column=0, sticky="nsew")
-            vscroll.grid(row=0, column=1, sticky="ns")
-            right = scroll_frame
-        else:
-            right = right_container
+
+        # --- ALWAYS USE CANVAS+FRAME FOR SCROLLABILITY ---
+        canvas = tk.Canvas(right_container, borderwidth=0, highlightthickness=0)
+        vscroll = ttk.Scrollbar(right_container, orient="vertical", command=canvas.yview)
+        scroll_frame = ttk.Frame(canvas)
+        scroll_window = canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+        canvas.configure(yscrollcommand=vscroll.set)
+        canvas.grid(row=0, column=0, sticky="nsew")
+        # Don't grid vscroll yet
+        right_container.rowconfigure(0, weight=1)
+        right_container.columnconfigure(0, weight=1)
+
+        def resize_scroll_frame(event=None):
+            # Make scroll_frame always as wide as the canvas (minus scrollbar)
+            canvas_width = canvas.winfo_width()
+            canvas.itemconfig(scroll_window, width=canvas_width)
+            scroll_frame.update_idletasks()
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        canvas.bind("<Configure>", resize_scroll_frame)
+        right_container.bind("<Configure>", lambda e: resize_scroll_frame())
+
+        right = scroll_frame
         right.columnconfigure(0, weight=1)
+        # --- PROJECT LINE ---
         desc = tk.Label(right, text="Gestion de Projet", font=("Arial", 14))
-        desc.grid(row=0, column=0, pady=(0,5), sticky='w')
+        desc.grid(row=0, column=0, pady=(0,2), sticky='w')
         hr = ttk.Separator(right, orient='horizontal')
-        hr.grid(row=1, column=0, sticky='ew', pady=(0,10))
+        hr.grid(row=1, column=0, sticky='ew', pady=(0,4))
         # --- BUTTON SIZE LOGIC ---
+        screen_h = self.master.winfo_screenheight()
         btn_height = int(screen_h * 0.18)
         btn_width = int(btn_height * 2.2)
         button_frame = ttk.Frame(right)
-        button_frame.grid(row=2, column=0, sticky='w')
+        button_frame.grid(row=2, column=0, sticky='w', pady=(0,2))
         def make_rect_btn(parent, text, emoji, command=None):
             btn = tk.Frame(parent, width=btn_width, height=btn_height, bg="#f7c97c", relief='raised', borderwidth=2, cursor='hand2')
             btn.grid_propagate(False)
@@ -175,10 +181,25 @@ class SplashWindow:
         create_btn.grid(row=0, column=0, sticky='w', padx=(0,10))
         open_btn = make_rect_btn(button_frame, "Ouvrir un projet existant", "📁", self._open)
         open_btn.grid(row=0, column=1, sticky='w')
+        # --- CRYPTO SECTION ---
         if self.jwt_token:
-            create_crypto_section(right, btn_height)
+            create_crypto_section(right, btn_height)  # crypto section already uses reduced padding
+            # --- GESTION SECTION ---
             if self.role in ("Geophysicien", "Responsable"):
-                create_admin_section(right, btn_height, self.jwt_token, self.role)
+                create_admin_section(right, btn_height, self.jwt_token, self.role)  # gestion section already uses reduced padding
+
+        # --- SCROLLBAR LOGIC: Only show if needed ---
+        def update_scrollbar():
+            scroll_frame.update_idletasks()
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            if scroll_frame.winfo_height() > right_container.winfo_height():
+                vscroll.grid(row=0, column=1, sticky="ns")
+            else:
+                vscroll.grid_forget()
+        right_container.after(100, update_scrollbar)
+        # Also update scrollbar on resize
+        canvas.bind("<Configure>", lambda e: update_scrollbar())
+        right_container.bind("<Configure>", lambda e: update_scrollbar())
 
     def _create(self):
         self.master.state('normal')
