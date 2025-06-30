@@ -73,7 +73,10 @@ def encrypt_file(filepath):
         with open(encrypted_path, 'wb') as f:
             f.write(ciphertext)
 
-        messagebox.showinfo("Succès", f"Fichier chiffré avec succès!\nSauvegardé comme: {os.path.basename(encrypted_path)}")
+        # Delete the original file after successful encryption
+        os.remove(filepath)
+
+        messagebox.showinfo("Succès", f"Fichier chiffré avec succès!\nSauvegardé comme: {os.path.basename(encrypted_path)}\nFichier original supprimé.")
         
     except Exception as e:
         messagebox.showerror("Erreur", f"Erreur lors du chiffrement: {str(e)}")
@@ -113,12 +116,15 @@ def decrypt_file(filepath):
         # Decrypt the message (nonce is included in the encrypted message)
         plaintext = box.decrypt(encrypted)
 
-        # Save decrypted file with .dec extension
-        decrypted_path = filepath.replace('.enc', '.dec')
-        with open(decrypted_path, 'wb') as f:
+        # Save decrypted file with original filename (remove .enc extension)
+        original_path = filepath.replace('.enc', '')
+        with open(original_path, 'wb') as f:
             f.write(plaintext)
 
-        messagebox.showinfo("Succès", f"Fichier déchiffré avec succès!\nSauvegardé comme: {os.path.basename(decrypted_path)}")
+        # Delete the encrypted file after successful decryption
+        os.remove(filepath)
+
+        messagebox.showinfo("Succès", f"Fichier déchiffré avec succès!\nSauvegardé comme: {os.path.basename(original_path)}\nFichier chiffré supprimé.")
         
     except Exception as e:
         messagebox.showerror("Erreur", f"Erreur lors du déchiffrement: {str(e)}")
